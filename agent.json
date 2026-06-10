@@ -1,0 +1,11 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Pulse",
+  "description": "AI agent that monitors Celo wallets and DeFi positions, alerts users, and executes protective actions autonomously",
+  "image": "https://blob.8004scan.app/1c6e473f622cdb0a5874f3478a4fee8266fa8c9c7cf1c4e2505906af983b49cf.jpg",
+  "services": [],
+  "registrations": [],
+  "supportedTrusts": [],
+  "active": false,
+  "x402support": false
+}
