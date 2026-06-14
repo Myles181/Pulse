@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pulse — The Onchain Notification Agent for Celo</title>
+  <meta name="description" content="Pulse monitors your Celo wallet 24/7. Get notified for low balances, whale moves, and DeFi opportunities — without ever giving up your email." />
+  <meta property="og:title" content="Pulse — The Onchain Notification Agent for Celo" />
+  <meta property="og:description" content="Real-time alerts for your Celo wallet. Privacy-first. Powered by ERC-8004." />
+  <meta property="og:image" content="logo.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #090C18;
+      --bg1:       #0D1122;
+      --bg2:       #111827;
+      --border:    #1a2035;
+      --border2:   #243050;
+      --text:      #e8eaf0;
+      --muted:     #5a6380;
+      --muted2:    #374060;
+      --green:     #3DD9DC;
+      --green-dim: rgba(61,217,220,.1);
+      --cyan:      #3DD9DC;
+      --purple:    #7B5CF0;
+      --yellow:    #FBCC5C;
+      --radius:    14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Nav ─────────────────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 64px;
+      background: rgba(8,8,8,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.5px;
+    }
+
+    .nav-badge {
+      font-size: 10px;
+      font-weight: 600;
+      color: #000;
+      background: var(--green);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      color: var(--muted);
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      background: var(--green);
+      color: #000;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 8px;
+      transition: opacity .2s;
+    }
+    .nav-cta:hover { opacity: .85; }
+
+    /* ── Sections ─────────────────────────────────────────────────────────── */
+    section { padding: 96px 40px; max-width: 1120px; margin: 0 auto; }
+    .divider { border: none; border-top: 1px solid var(--border); }
+
+    /* ── Hero ─────────────────────────────────────────────────────────────── */
+    #hero {
+      text-align: center;
+      padding-top: 120px;
+      padding-bottom: 96px;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--green-dim);
+      border: 1px solid rgba(61,217,220,.25);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--green);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .hero-eyebrow span { opacity: .5; }
+
+    h1 {
+      font-size: clamp(40px, 6vw, 72px);
+      font-weight: 800;
+      letter-spacing: -2.5px;
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+
+    .gradient {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 540px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: #000;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 13px 28px;
+      border-radius: 10px;
+      transition: opacity .2s, transform .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 13px 28px;
+      border-radius: 10px;
+      border: 1px solid var(--border2);
+      transition: border-color .2s, background .2s;
+    }
+    .btn-secondary:hover { border-color: #444; background: var(--bg2); }
+
+    .hero-agent {
+      margin-top: 48px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted2);
+    }
+    .hero-agent a { color: var(--muted); transition: color .2s; }
+    .hero-agent a:hover { color: var(--green); }
+
+    /* ── Metrics ──────────────────────────────────────────────────────────── */
+    #metrics {
+      padding: 0 40px 0;
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .metric {
+      padding: 28px 32px;
+      border-right: 1px solid var(--border);
+    }
+    .metric:last-child { border-right: none; }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--green);
+      margin-bottom: 4px;
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Section label ───────────────────────────────────────────────────── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .section-sub {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 480px;
+      line-height: 1.7;
+    }
+
+    /* ── How it works ────────────────────────────────────────────────────── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 56px;
+      background: var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .step {
+      background: var(--bg1);
+      padding: 40px 32px;
+    }
+
+    .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted2);
+      letter-spacing: .1em;
+      margin-bottom: 20px;
+    }
+
+    .step-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+
+    .step h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.5px;
+      margin-bottom: 10px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── Comparison ──────────────────────────────────────────────────────── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      margin-top: 56px;
+      background: var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .compare-col {
+      background: var(--bg1);
+      padding: 40px;
+    }
+
+    .compare-col.good { background: var(--green-dim); }
+
+    .compare-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .compare-title.bad { color: var(--muted2); }
+    .compare-title.good { color: var(--green); }
+
+    .compare-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .compare-item .icon { flex-shrink: 0; font-size: 16px; margin-top: 1px; }
+    .compare-item .bad-text { color: var(--muted2); text-decoration: line-through; }
+    .compare-item .good-text { color: var(--text); }
+
+    /* ── Feature grid ────────────────────────────────────────────────────── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      margin-top: 56px;
+      background: var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .feature-card {
+      background: var(--bg1);
+      padding: 40px;
+    }
+
+    .feature-card.wide {
+      grid-column: span 2;
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -.5px;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 420px;
+    }
+
+    .feature-tag {
+      display: inline-block;
+      margin-top: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+      background: var(--green-dim);
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(61,217,220,.2);
+    }
+
+    /* ── Tech stack ──────────────────────────────────────────────────────── */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 56px;
+      background: var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .tech-card {
+      background: var(--bg1);
+      padding: 32px;
+    }
+
+    .tech-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .tech-card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .tech-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    /* ── Code block ──────────────────────────────────────────────────────── */
+    .code-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+      margin-top: 56px;
+    }
+
+    .code-block {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .code-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+
+    .code-bar-label { font-size: 12px; color: var(--muted2); margin-left: auto; }
+
+    pre {
+      padding: 24px;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: #c9d1d9;
+    }
+
+    .c-comment { color: #6e7681; }
+    .c-keyword { color: #ff79c6; }
+    .c-string  { color: #a5d6ff; }
+    .c-func    { color: var(--green); }
+    .c-num     { color: var(--yellow); }
+
+    /* ── Final CTA ───────────────────────────────────────────────────────── */
+    #cta {
+      text-align: center;
+      padding: 120px 40px;
+    }
+
+    .cta-box {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 80px 48px;
+      max-width: 680px;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-box::before {
+      content: '';
+      position: absolute;
+      top: -80px; left: 50%; transform: translateX(-50%);
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(61,217,220,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-box h2 {
+      margin-bottom: 16px;
+    }
+
+    .cta-box p {
+      color: var(--muted);
+      margin-bottom: 36px;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px 40px;
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left { display: flex; flex-direction: column; gap: 8px; }
+    .footer-logo { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .footer-copy { font-size: 12px; color: var(--muted2); }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--muted);
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      section { padding: 64px 20px; }
+      #hero { padding-top: 80px; }
+      .metrics-strip { grid-template-columns: 1fr 1fr; }
+      .metric { border-right: none; border-bottom: 1px solid var(--border); }
+      .metric:nth-child(2n) { border-right: none; }
+      .steps { grid-template-columns: 1fr; }
+      .compare { grid-template-columns: 1fr; }
+      .features { grid-template-columns: 1fr; }
+      .feature-card.wide { grid-column: span 1; }
+      .tech-grid { grid-template-columns: 1fr; }
+      .code-section { grid-template-columns: 1fr; }
+      footer { flex-direction: column; align-items: flex-start; }
+    }
+  
+    /* ── Scroll reveal base states ─────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1),
+                  transform 0.65s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.from-left  { transform: translateX(-28px); }
+    .reveal.from-right { transform: translateX(28px); }
+    .reveal.scale-in   { transform: scale(0.94) translateY(16px); }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* Stagger delays for grid children */
+    .stagger > *:nth-child(1) { transition-delay: 0s;    }
+    .stagger > *:nth-child(2) { transition-delay: 0.08s; }
+    .stagger > *:nth-child(3) { transition-delay: 0.16s; }
+    .stagger > *:nth-child(4) { transition-delay: 0.24s; }
+    .stagger > *:nth-child(5) { transition-delay: 0.32s; }
+    .stagger > *:nth-child(6) { transition-delay: 0.40s; }
+
+    /* Counter number animation */
+    .metric-value { transition: color 0.4s; }
+
+    /* Line reveal */
+    .line-reveal {
+      transform-origin: left;
+      transform: scaleX(0);
+      transition: transform 0.8s cubic-bezier(0.16,1,0.3,1);
+    }
+    .line-reveal.visible { transform: scaleX(1); }
+
+    /* Hero entrance — runs immediately on load */
+    .hero-eyebrow { animation: fadeUp 0.7s 0.1s cubic-bezier(0.16,1,0.3,1) both; }
+    h1            { animation: fadeUp 0.7s 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+    .hero-sub     { animation: fadeUp 0.7s 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+    .hero-ctas    { animation: fadeUp 0.7s 0.42s cubic-bezier(0.16,1,0.3,1) both; }
+    .hero-agent   { animation: fadeUp 0.7s 0.52s cubic-bezier(0.16,1,0.3,1) both; }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:translateY(0);    }
+    }
+
+    /* ── Herald-style Mist Effect ────────────────────────────────────────── */
+    body {
+      --mouse-x: 50%;
+      --mouse-y: 50%;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: 
+        /* The mouse-following bright teal core */
+        radial-gradient(
+          800px circle at var(--mouse-x) var(--mouse-y),
+          rgba(61, 217, 220, 0.12),
+          transparent 40%
+        ),
+        /* A wider, softer purple/blue aura following the mouse */
+        radial-gradient(
+          1200px circle at var(--mouse-x) var(--mouse-y),
+          rgba(123, 92, 240, 0.08),
+          transparent 50%
+        ),
+        /* Static subtle ambient background mist */
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(61, 217, 220, 0.08), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(123, 92, 240, 0.06), transparent);
+      
+      /* Smooth transition for mouse movement */
+      transition: background 0.1s ease;
+    }
+
+    #hero > * { position: relative; z-index: 1; }
+
+    nav, section, #metrics, footer, hr {
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">
+    <img src="logo.png" alt="Pulse" style="width:36px;height:36px;object-fit:contain;border-radius:6px;" />
+    Pulse
+    <span class="nav-badge">ERC-8004</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#tech">Built on Celo</a></li>
+    <li><a href="https://github.com/Myles181/Pulse" target="_blank">GitHub ↗</a></li>
+  </ul>
+  <a class="nav-cta" href="https://t.me/PulseAgentBot">Open in Telegram →</a>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<section id="hero">
+  <div class="hero-eyebrow">
+    <span>●</span> Live on Celo Mainnet · Agent #9358
+  </div>
+  <h1>
+    The notification agent<br>
+    for <span class="gradient">Celo.</span><br>
+    Privacy-first.
+  </h1>
+  <p class="hero-sub">
+    Pulse monitors your wallet 24/7 and alerts you to balance drops, whale moves, and DeFi opportunities — without ever storing your contact info in plaintext.
+  </p>
+  <div class="hero-ctas">
+    <a class="btn-primary" href="https://t.me/PulseAgentBot">
+      Open Telegram bot →
+    </a>
+    <a class="btn-secondary" href="https://8004scan.io/agents/9358" target="_blank">
+      View on 8004scan ↗
+    </a>
+  </div>
+  <div class="hero-agent">
+    Powered by
+    <a href="https://docs.celo.org/build-on-celo/build-with-ai/8004" target="_blank">ERC-8004</a>
+    ·
+    <a href="https://mento.finance" target="_blank">Mento</a>
+    ·
+    <a href="https://self.xyz" target="_blank">Self Protocol</a>
+  </div>
+</section>
+
+<!-- ── Metrics ─────────────────────────────────────────────────────────── -->
+<div id="metrics">
+  <div class="metrics-strip stagger">
+    <div class="metric reveal">
+      <div class="metric-value" data-count="30|s">30s</div>
+      <div class="metric-label">Watch interval per wallet</div>
+    </div>
+    <div class="metric reveal">
+      <div class="metric-value" data-count="4">4</div>
+      <div class="metric-label">Alert types active</div>
+    </div>
+    <div class="metric reveal">
+      <div class="metric-value" data-count="100|%">100%</div>
+      <div class="metric-label">Onchain receipts per alert</div>
+    </div>
+    <div class="metric reveal">
+      <div class="metric-value" data-count="0">0</div>
+      <div class="metric-label">Plaintext emails stored</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider line-reveal" style="margin-top:96px;" />
+
+<!-- ── How it works ──────────────────────────────────────────────────────── -->
+<section id="how">
+  <div class="section-label reveal from-left">How it works</div>
+  <h2 class="reveal">Transparent by design.<br>Private by default.</h2>
+  <p class="section-sub reveal">
+    Three steps from wallet to alert — no KYC, no email forms, no third-party trackers.
+  </p>
+
+  <div class="steps stagger">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">🔗</div>
+      <h3>Register your wallet</h3>
+      <p>Send <code style="background:var(--bg2);padding:2px 6px;border-radius:4px;font-size:12px;">/register 0xYourWallet</code> to the Pulse Telegram bot. No email, no sign-up, no password.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">⚙️</div>
+      <h3>Choose your protocols</h3>
+      <p>Use <code style="background:var(--bg2);padding:2px 6px;border-radius:4px;font-size:12px;">/protocols</code> to toggle what you care about — balance alerts, whale tracking, or both. Every toggle is recorded onchain.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">🔔</div>
+      <h3>Get notified instantly</h3>
+      <p>Pulse watches every block. When a threshold is crossed, your Telegram pings in seconds. An immutable receipt is written to the ERC-8004 Reputation Registry.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider line-reveal" />
+
+<!-- ── Comparison ─────────────────────────────────────────────────────────── -->
+<section>
+  <div class="section-label reveal from-left">The difference</div>
+  <h2 class="reveal">The old way vs.<br>The Pulse way.</h2>
+  <p class="section-sub reveal">
+    Web2 notification services store your contact info in a database. Pulse never does.
+  </p>
+
+  <div class="compare stagger">
+    <div class="compare-col">
+      <div class="compare-title bad">❌ The old way</div>
+      <div class="compare-item">
+        <span class="icon">🗄️</span>
+        <span class="bad-text">Your email stored in a centralised database</span>
+      </div>
+      <div class="compare-item">
+        <span class="icon">🔓</span>
+        <span class="bad-text">One breach exposes all user contacts</span>
+      </div>
+      <div class="compare-item">
+        <span class="icon">🕳️</span>
+        <span class="bad-text">No proof of delivery — you just have to trust them</span>
+      </div>
+      <div class="compare-item">
+        <span class="icon">🧱</span>
+        <span class="bad-text">Locked to one provider's infrastructure</span>
+      </div>
+      <div class="compare-item">
+        <span class="icon">🚫</span>
+        <span class="bad-text">No wallet awareness — generic, dumb alerts</span>
+      </div>
+    </div>
+    <div class="compare-col good">
+      <div class="compare-title good">✅ The Pulse way</div>
+      <div class="compare-item">
+        <span class="icon">🔐</span>
+        <span class="good-text">Email encrypted with agent public key — zero plaintext in storage</span>
+      </div>
+      <div class="compare-item">
+        <span class="icon">🛡️</span>
+        <span class="good-text">Nothing to breach — encrypted blobs are useless without the key</span>
+      </div>
+      <div class="compare-item">
+        <span class="icon">⛓️</span>
+        <span class="good-text">Every alert writes an immutable onchain receipt via ERC-8004</span>
+      </div>
+      <div class="compare-item">
+        <span class="icon">🌐</span>
+        <span class="good-text">Runs on Celo mainnet — always on, no single point of failure</span>
+      </div>
+      <div class="compare-item">
+        <span class="icon">🧠</span>
+        <span class="good-text">Position-aware alerts — only notifies you about what you actually hold</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider line-reveal" />
+
+<!-- ── Features ───────────────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="section-label reveal from-left">Features</div>
+  <h2 class="reveal">Everything watching.<br>Nothing leaking.</h2>
+
+  <div class="features stagger">
+    <div class="feature-card">
+      <div class="feature-icon">🐋</div>
+      <h3>Whale Tracker</h3>
+      <p>Pulse scans every Celo block for large CELO, cUSD, cEUR, and USDC transfers. When a whale moves, you know about it in seconds — with the wallet label if it's a known exchange or protocol.</p>
+      <span class="feature-tag">Live on mainnet</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💰</div>
+      <h3>Balance Alerts</h3>
+      <p>Get notified when your CELO or cUSD drops below your threshold, or when a large transaction hits your wallet. Thresholds are configurable per user.</p>
+      <span class="feature-tag">Configurable</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📧</div>
+      <h3>Daily Email Digest</h3>
+      <p>Register your email once — Pulse encrypts it with the agent's public key and never stores it in plaintext. Every morning at 8 AM UTC you get a clean wallet summary in your inbox.</p>
+      <span class="feature-tag">Herald-inspired privacy model</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🪪</div>
+      <h3>Self Protocol Verification</h3>
+      <p>Prove you're a real human using your passport — without revealing any personal data. ZK proofs mean Pulse knows you're verified without knowing who you are.</p>
+      <span class="feature-tag">Zero-knowledge</span>
+    </div>
+    <div class="feature-card wide">
+      <div class="feature-icon">⚙️</div>
+      <h3>Protocol Selection</h3>
+      <p>Use <code style="background:var(--bg);padding:2px 8px;border-radius:4px;font-size:13px;">/protocols</code> to toggle exactly what you want to be notified about. Every toggle is written to the ERC-8004 Reputation Registry — generating onchain activity that builds Pulse's agent reputation automatically.</p>
+      <span class="feature-tag">Inline Telegram keyboard</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider line-reveal" />
+
+<!-- ── Tech / Built on Celo ───────────────────────────────────────────────── -->
+<section id="tech">
+  <div class="section-label reveal from-left">Built on Celo</div>
+  <h2 class="reveal">Native Celo infrastructure.<br>Not bolted on.</h2>
+  <p class="section-sub reveal">
+    Every layer of Pulse uses existing Celo ecosystem tools — not custom-built replacements.
+  </p>
+
+  <div class="tech-grid stagger">
+    <div class="tech-card">
+      <h3><span class="tech-dot"></span>ERC-8004 Registry</h3>
+      <p>Pulse is a registered ERC-8004 agent (ID #9358). Every alert writes a feedback receipt to the Reputation Registry — building verifiable onchain history.</p>
+    </div>
+    <div class="tech-card">
+      <h3><span class="tech-dot"></span>Mento SortedOracles</h3>
+      <p>Live CELO/USD price fetched directly from Mento's onchain oracle. No third-party price API, no stale data — the same source Mento itself uses.</p>
+    </div>
+    <div class="tech-card">
+      <h3><span class="tech-dot"></span>Self Protocol</h3>
+      <p>ZK passport verification via Self Protocol. Users prove humanity without revealing identity. Pulse verifies proofs against Celo's IdentityVerificationHub contract.</p>
+    </div>
+    <div class="tech-card">
+      <h3><span class="tech-dot"></span>Native token monitoring</h3>
+      <p>Watches CELO, cUSD, cEUR, and bridged USDC — the core Celo token ecosystem — with no dependency on external price feeds or indexers.</p>
+    </div>
+    <div class="tech-card">
+      <h3><span class="tech-dot"></span>Forno RPC</h3>
+      <p>Connected to Celo's own Forno RPC endpoint. Scans every block for whale activity within seconds of it being finalized on the L2.</p>
+    </div>
+    <div class="tech-card">
+      <h3><span class="tech-dot"></span>eth-crypto encryption</h3>
+      <p>User emails are encrypted client-side with the agent's public key before storage. Decrypted in-memory at send time, then wiped. The same privacy architecture Herald uses on Solana.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider line-reveal" />
+
+<!-- ── Code section ───────────────────────────────────────────────────────── -->
+<section>
+  <div class="section-label reveal from-left">Under the hood</div>
+  <h2 class="reveal">One agent.<br>Every alert onchain.</h2>
+
+  <div class="code-section">
+    <div class="reveal from-left">
+      <p style="color:var(--muted);line-height:1.75;margin-bottom:24px;">
+        Every time Pulse sends an alert, it calls <code style="background:var(--bg2);padding:2px 6px;border-radius:4px;font-size:13px;">giveFeedback()</code> on the ERC-8004 Reputation Registry — writing an immutable receipt of the agent's activity onchain.
+      </p>
+      <p style="color:var(--muted);line-height:1.75;margin-bottom:24px;">
+        This means every alert Pulse sends is verifiable, auditable, and contributes to the agent's onchain reputation score on 8004scan.
+      </p>
+      <a class="btn-secondary" href="https://8004scan.io/agents/9358" target="_blank" style="display:inline-block;">View receipts on 8004scan ↗</a>
+    </div>
+    <div class="code-block reveal from-right">
+      <div class="code-bar">
+        <div class="code-dot dot-red"></div>
+        <div class="code-dot dot-yellow"></div>
+        <div class="code-dot dot-green"></div>
+        <span class="code-bar-label">onchain.ts</span>
+      </div>
+      <pre><span class="c-comment">// Write receipt per alert → ERC-8004</span>
+<span class="c-keyword">const</span> contract = <span class="c-keyword">new</span> <span class="c-func">Contract</span>(
+  REPUTATION_REGISTRY, ABI, wallet
+);
+
+<span class="c-keyword">const</span> tag = ethers.<span class="c-func">encodeBytes32String</span>(
+  alertType
+);
+
+<span class="c-keyword">const</span> tx = <span class="c-keyword">await</span> contract.<span class="c-func">giveFeedback</span>(
+  <span class="c-num">9358</span>,      <span class="c-comment">// Pulse agent ID</span>
+  [tag],     <span class="c-comment">// alert type tag</span>
+  [<span class="c-num">1</span>],       <span class="c-comment">// positive signal</span>
+  comment    <span class="c-comment">// human-readable note</span>
+);
+
+<span class="c-keyword">await</span> tx.<span class="c-func">wait</span>();
+<span class="c-comment">// Receipt written. Permanent.</span></pre>
+    </div>
+  </div>
+</section>
+
+<hr class="divider line-reveal" />
+
+<!-- ── Final CTA ──────────────────────────────────────────────────────────── -->
+<section id="cta" style="max-width:1120px;">
+  <div class="cta-box reveal scale-in">
+    <div class="section-label" style="text-align:center;margin-bottom:20px;">Get started</div>
+    <h2>Your first alert is<br>one message away.</h2>
+    <p>Open the Pulse bot in Telegram, register your wallet, and you're live in under 60 seconds.</p>
+    <div class="hero-ctas" style="justify-content:center;gap:12px;">
+      <a class="btn-primary" href="https://t.me/PulseAgentBot">Open Telegram bot →</a>
+      <a class="btn-secondary" href="https://github.com/Myles181/Pulse" target="_blank">View source ↗</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-left">
+    <div class="footer-logo">
+      <img src="logo.png" alt="Pulse" style="width:24px;height:24px;object-fit:contain;border-radius:4px;" />
+      Pulse
+    </div>
+    <div class="footer-copy">ERC-8004 Agent #9358 · Built on Celo · Celo Onchain Agents Hackathon 2026</div>
+  </div>
+  <ul class="footer-links">
+    <li><a href="https://t.me/PulseAgentBot" target="_blank">Telegram Bot</a></li>
+    <li><a href="https://github.com/Myles181/Pulse" target="_blank">GitHub</a></li>
+    <li><a href="https://8004scan.io/agents/9358" target="_blank">8004scan</a></li>
+    <li><a href="https://docs.celo.org/build-on-celo/build-with-ai/8004" target="_blank">ERC-8004 Docs</a></li>
+  </ul>
+</footer>
+
+<script>
+// ── Scroll reveal ──────────────────────────────────────────────────────────
+(function () {
+  // Observe .reveal elements
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        revealObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+  // Observe .stagger containers — reveal children one by one
+  const staggerObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        [...e.target.children].forEach((child, i) => {
+          child.classList.add('reveal');
+          setTimeout(() => child.classList.add('visible'), i * 90);
+        });
+        staggerObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.stagger').forEach(el => staggerObs.observe(el));
+
+  // Observe .line-reveal elements (hr dividers)
+  const lineObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        lineObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('.line-reveal').forEach(el => lineObs.observe(el));
+
+  // Metric counter animation
+  function animateCount(el, target, decimals = 0, suffix = '') {
+    const duration = 1200;
+    const start = performance.now();
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 4);
+      const value = target * ease;
+      el.textContent = decimals ? value.toFixed(decimals) + suffix : Math.round(value) + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  const counterObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const raw = el.dataset.count;
+      if (!raw) return;
+      const [num, suffix] = raw.split('|');
+      animateCount(el, parseFloat(num), num.includes('.') ? 1 : 0, suffix || '');
+      counterObs.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('[data-count]').forEach(el => counterObs.observe(el));
+})();
+</script>
+
+<script>
+// ── Herald-style Mist Tracker ─────────────────────────────────────────────
+(function() {
+  const body = document.body;
+
+  // Track mouse movement and update CSS variables
+  window.addEventListener('mousemove', (e) => {
+    body.style.setProperty('--mouse-x', `${e.clientX}px`);
+    body.style.setProperty('--mouse-y', `${e.clientY}px`);
+  });
+
+  // Touch support
+  window.addEventListener('touchmove', (e) => {
+    body.style.setProperty('--mouse-x', `${e.touches[0].clientX}px`);
+    body.style.setProperty('--mouse-y', `${e.touches[0].clientY}px`);
+  }, { passive: true });
+})();
+</script>
+
+</body>
+</html>

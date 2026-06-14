@@ -1,0 +1,29 @@
+{
+  "name": "pulseagent",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx tsx src/index.ts",
+    "dev": "npx tsx --watch src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
+    "@types/node": "^22.19.20",
+    "hardhat": "^3.9.0",
+    "tsx": "^4.22.4",
+    "typescript": "~6.0.3"
+  },
+  "dependencies": {
+    "@selfxyz/core": "^1.0.8",
+    "dotenv": "^17.4.2",
+    "eth-crypto": "^4.1.0",
+    "ethers": "^6.16.0",
+    "resend": "^6.12.4",
+    "telegraf": "^4.16.3"
+  },
+  "type": "module"
+}

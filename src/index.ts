@@ -1,0 +1,175 @@
+import { ethers } from 'ethers';
+import { config } from './config.js';
+import { loadState, saveState, getAllUsers } from './storage.js';
+import { detectAlerts } from './alerts.js';
+import { writeReceipt } from './onchain.js';
+import { scanWhales, formatWhaleAlert, whaleButtons } from './whale.js';
+import { getCELOPrice } from './price.js';
+import { sendAllDigests } from './email.js';
+import { initVerifier, startWebhookServer } from './verify.js';
+import { setupBot } from './bot.js';
+
+const CUSD = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
+const ERC20_ABI = ['function balanceOf(address) view returns (uint256)'];
+
+async function main() {
+  const provider = new ethers.JsonRpcProvider(config.rpcUrl);
+  const agentWallet = new ethers.Wallet(config.privateKey, provider);
+  const state = loadState();
+  const cusd = new ethers.Contract(CUSD, ERC20_ABI, provider);
+
+  const agentAddress = await agentWallet.getAddress();
+  const agentBalance = ethers.formatEther(await provider.getBalance(agentAddress));
+  const currentBlock = await provider.getBlockNumber();
+
+  // Initialise whale scan cursor to current block (don't scan history on start)
+  if (state.lastWhaleBlock === 0) {
+    state.lastWhaleBlock = currentBlock;
+    saveState(state);
+  }
+
+  console.log('');
+  console.log('  🔔 Pulse — Onchain Notification Agent for Celo');
+  console.log('  ─────────────────────────────────────────────');
+  console.log(`  Agent wallet : ${agentAddress}`);
+  console.log(`  Agent balance: ${parseFloat(agentBalance).toFixed(4)} CELO`);
+  console.log(`  Agent ID     : ${config.agentId} → https://8004scan.io/agents/${config.agentId}`);
+  console.log(`  RPC          : ${config.rpcUrl}`);
+  console.log(`  Watch interval: ${config.watchIntervalMs / 1000}s`);
+  console.log(`  Whale threshold: ${config.whaleCELO.toLocaleString()} CELO / $${config.whaleUSD.toLocaleString()}`);
+  console.log('');
+
+  // Self Protocol identity verification
+  initVerifier();
+  startWebhookServer(state, config.webhookPort);
+
+  const bot = setupBot(state, provider, agentWallet);
+
+  // ── Main watcher loop ────────────────────────────────────────────────────
+  async function runWatcher() {
+    let currentBlock: number;
+    try {
+      currentBlock = await provider.getBlockNumber();
+    } catch {
+      console.error('[Watcher] RPC error, skipping cycle');
+      return;
+    }
+
+    const users = getAllUsers(state);
+    console.log(`[Watcher] Block ${currentBlock} | ${users.length} wallet(s)`);
+
+    // ── Per-user balance checks ────────────────────────────────────────────
+    for (const user of users) {
+      try {
+        const [celoRaw, cusdRaw] = await Promise.all([
+          provider.getBalance(user.walletAddress),
+          cusd.balanceOf(user.walletAddress),
+        ]);
+        const celoBal = ethers.formatEther(celoRaw);
+        const cusdBal = ethers.formatEther(cusdRaw);
+
+        const alerts = user.protocols.includes('balance')
+          ? detectAlerts(user, celoBal, cusdBal)
+          : [];
+
+        for (const alert of alerts) {
+          try {
+            await bot.telegram.sendMessage(user.chatId, alert.message, {
+              parse_mode: 'HTML',
+              reply_markup: alert.buttons ? {
+                inline_keyboard: alert.buttons.map(row =>
+                  row.map(btn => ({ text: btn.text, url: btn.url }))
+                ),
+              } : undefined,
+            });
+            const txHash = await writeReceipt(agentWallet, alert.type, user.walletAddress);
+            if (txHash) {
+              await bot.telegram.sendMessage(
+                user.chatId,
+                `📝 Onchain receipt: <a href="https://celoscan.io/tx/${txHash}">celoscan.io</a>`,
+                { parse_mode: 'HTML' },
+              );
+            }
+            user.alertCount++;
+            console.log(`[Alert] ${alert.type} → chat:${user.chatId} | receipt:${txHash ?? 'none'}`);
+          } catch (err) {
+            console.error('[Alert] Delivery failed:', err);
+          }
+        }
+
+        user.lastCELO = celoBal;
+        user.lastCUSD = cusdBal;
+        user.lastBlock = currentBlock;
+        state.users[String(user.chatId)] = user;
+      } catch (err) {
+        console.error(`[Watcher] Error for wallet ${user.walletAddress}:`, err);
+      }
+    }
+
+    // ── Whale scan (global — alerts all users with whale protocol) ─────────
+    const whaleUsers = users.filter(u => u.protocols.includes('whale'));
+    if (whaleUsers.length > 0 && currentBlock > state.lastWhaleBlock) {
+      const fromBlock = state.lastWhaleBlock + 1;
+      const toBlock   = currentBlock;
+      console.log(`[Whale] Scanning blocks ${fromBlock}–${toBlock}`);
+
+      try {
+        const celoPrice = await getCELOPrice(provider);
+        const moves = await scanWhales(provider, fromBlock, toBlock, config.whaleCELO, config.whaleUSD, celoPrice);
+        console.log(`[Whale] Found ${moves.length} move(s)`);
+
+        for (const move of moves) {
+          const msg = formatWhaleAlert(move);
+          for (const user of whaleUsers) {
+            try {
+              await bot.telegram.sendMessage(user.chatId, msg, {
+                parse_mode: 'HTML',
+                reply_markup: whaleButtons(move),
+              });
+              user.alertCount++;
+            } catch {}
+          }
+          // One receipt per whale move (not per user) to avoid spam
+          const txHash = await writeReceipt(agentWallet, 'whale_alert', move.from);
+          if (txHash) console.log(`[Whale] Receipt: ${txHash}`);
+        }
+      } catch (err) {
+        console.error('[Whale] Scan error:', err);
+      }
+
+      state.lastWhaleBlock = currentBlock;
+    }
+
+    saveState(state);
+  }
+
+  // Drop any existing Telegram polling session before starting
+  try {
+    await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+  } catch {}
+
+  // Start bot polling
+  bot.launch();
+  console.log('[Pulse] Bot online. Send /start in Telegram to begin.\n');
+
+  // Run watcher immediately, then on interval
+  await runWatcher();
+  setInterval(runWatcher, config.watchIntervalMs);
+
+  // Daily digest at 8:00 AM UTC
+  let lastDigestDate = '';
+  setInterval(() => {
+    const now = new Date();
+    const todayUTC = now.toISOString().split('T')[0];
+    if (now.getUTCHours() === 8 && now.getUTCMinutes() === 0 && lastDigestDate !== todayUTC) {
+      lastDigestDate = todayUTC;
+      console.log('[Digest] Sending daily digests…');
+      sendAllDigests(state, provider).catch(console.error);
+    }
+  }, 60000);
+
+  process.once('SIGINT',  () => bot.stop('SIGINT'));
+  process.once('SIGTERM', () => bot.stop('SIGTERM'));
+}
+
+main().catch(console.error);
