@@ -6,7 +6,8 @@ import { writeReceipt } from './onchain.js';
 import { scanWhales, formatWhaleAlert, whaleButtons } from './whale.js';
 import { getCELOPrice } from './price.js';
 import { sendAllDigests } from './email.js';
-import { initVerifier, startWebhookServer } from './verify.js';
+import { initVerifier } from './verify.js';
+import { createServer, setVerifier } from './server.js';
 import { setupBot } from './bot.js';
 
 const CUSD = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
@@ -40,8 +41,7 @@ async function main() {
   console.log('');
 
   // Self Protocol identity verification
-  initVerifier();
-  startWebhookServer(state, config.webhookPort);
+  const selfVerifier = initVerifier();
 
   const bot = setupBot(state, provider, agentWallet);
 
@@ -143,14 +143,22 @@ async function main() {
     saveState(state);
   }
 
-  // Drop any existing Telegram polling session before starting
-  try {
-    await bot.telegram.deleteWebhook({ drop_pending_updates: true });
-  } catch {}
+  if (config.webhookUrl) {
+    // ── Production: webhook mode (no polling conflicts) ────────────────
+    const telegramWebhook = `${config.webhookUrl}/telegram`;
+    await bot.telegram.setWebhook(telegramWebhook, { drop_pending_updates: true });
 
-  // Start bot polling
-  bot.launch();
-  console.log('[Pulse] Bot online. Send /start in Telegram to begin.\n');
+    if (selfVerifier) setVerifier(selfVerifier);
+    createServer(bot, state, config.webhookPort);
+
+    console.log(`[Pulse] Webhook mode → ${telegramWebhook}`);
+    console.log('[Pulse] Bot online.\n');
+  } else {
+    // ── Local dev: polling mode ────────────────────────────────────────
+    await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+    bot.launch();
+    console.log('[Pulse] Polling mode — Bot online. Send /start in Telegram.\n');
+  }
 
   // Run watcher immediately, then on interval
   await runWatcher();

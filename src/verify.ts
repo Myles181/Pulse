@@ -10,20 +10,21 @@ const SCOPE = 'pulse-agent';
 
 let verifier: SelfBackendVerifier | null = null;
 
-export function initVerifier(): void {
+export function initVerifier(): any {
   if (!config.webhookUrl) {
     console.log('[Self] WEBHOOK_URL not set — Self Protocol verification disabled');
-    return;
+    return null;
   }
   verifier = new SelfBackendVerifier(
     SCOPE,
     config.webhookUrl,
-    false,           // mockPassport — false = real passports
-    AllIds,          // accept both attestation types
+    false,
+    AllIds,
     new DefaultConfigStore({ minimumAge: 18, ofac: true }),
     'hex',
   );
   console.log(`[Self] Verifier ready → ${config.webhookUrl}`);
+  return verifier;
 }
 
 export function generateVerifyLink(chatId: number): string | null {
