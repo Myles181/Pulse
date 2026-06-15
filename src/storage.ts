@@ -6,7 +6,7 @@ import type { AppState, User, Protocol } from './types.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_FILE = path.resolve(__dirname, '../data/users.json');
 
-const DEFAULT_PROTOCOLS: Protocol[] = ['balance', 'whale'];
+const DEFAULT_PROTOCOLS: Protocol[] = []; // users pick preferences on registration
 
 function ensureDir() {
   fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });

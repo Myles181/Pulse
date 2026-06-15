@@ -4,6 +4,22 @@ import type { User, Alert } from './types.js';
 const MENTO_SWAP = 'https://app.mento.finance/swap';
 const celoscan  = (addr: string) => `https://celoscan.io/address/${addr}`;
 
+// How long (ms) before the same alert type can fire again per user
+const COOLDOWNS: Record<string, number> = {
+  low_celo:        4 * 60 * 60 * 1000, // 4 hours
+  low_cusd:        4 * 60 * 60 * 1000, // 4 hours
+  large_outgoing:  1 * 60 * 60 * 1000, // 1 hour
+  large_incoming:  1 * 60 * 60 * 1000, // 1 hour
+  price_drop:      2 * 60 * 60 * 1000, // 2 hours
+};
+
+function isCoolingDown(user: User, alertType: string): boolean {
+  const last = user.alertCooldowns?.[alertType];
+  if (!last) return false;
+  const window = COOLDOWNS[alertType] ?? 60 * 60 * 1000; // default 1h
+  return Date.now() - last < window;
+}
+
 export function detectAlerts(user: User, celoBal: string, cusdBal: string): Alert[] {
   const alerts: Alert[] = [];
   const celo     = parseFloat(celoBal);
@@ -13,7 +29,7 @@ export function detectAlerts(user: User, celoBal: string, cusdBal: string): Aler
   const isFirst  = user.lastCELO === '-1';
 
   // ── Low CELO (gas) ────────────────────────────────────────────────────────
-  if (celo < config.lowCELO && (isFirst || prevCelo >= config.lowCELO)) {
+  if (celo < config.lowCELO && (isFirst || prevCelo >= config.lowCELO) && !isCoolingDown(user, 'low_celo')) {
     alerts.push({
       type: 'low_celo',
       message: [
@@ -37,7 +53,7 @@ export function detectAlerts(user: User, celoBal: string, cusdBal: string): Aler
   }
 
   // ── Low cUSD ──────────────────────────────────────────────────────────────
-  if (cusd < config.lowCUSD && (isFirst || prevCusd >= config.lowCUSD)) {
+  if (cusd < config.lowCUSD && (isFirst || prevCusd >= config.lowCUSD) && !isCoolingDown(user, 'low_cusd')) {
     alerts.push({
       type: 'low_cusd',
       message: [
@@ -61,7 +77,7 @@ export function detectAlerts(user: User, celoBal: string, cusdBal: string): Aler
   if (!isFirst) {
     // ── Large outgoing ───────────────────────────────────────────────────────
     const sent = prevCelo - celo;
-    if (sent > config.largeTxCELO) {
+    if (sent > config.largeTxCELO && !isCoolingDown(user, 'large_outgoing')) {
       alerts.push({
         type: 'large_outgoing',
         message: [
@@ -84,7 +100,7 @@ export function detectAlerts(user: User, celoBal: string, cusdBal: string): Aler
 
     // ── Large incoming ───────────────────────────────────────────────────────
     const received = celo - prevCelo;
-    if (received > config.largeTxCELO) {
+    if (received > config.largeTxCELO && !isCoolingDown(user, 'large_incoming')) {
       alerts.push({
         type: 'large_incoming',
         message: [

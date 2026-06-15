@@ -27,4 +27,7 @@ export const config = {
   // Self Protocol (optional — needs a public HTTPS webhook URL)
   webhookUrl: process.env.WEBHOOK_URL ?? '',
   webhookPort: Number(process.env.WEBHOOK_PORT ?? '3001'),
+
+  // Price drop alert threshold (% drop from reference price to trigger alert)
+  priceDropPct: Number(process.env.PRICE_DROP_PCT ?? '10'),
 };

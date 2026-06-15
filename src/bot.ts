@@ -16,6 +16,7 @@ const ERC20_ABI = ['function balanceOf(address) view returns (uint256)'];
 const PROTOCOL_META: Record<Protocol, { emoji: string; label: string }> = {
   balance:    { emoji: '💰', label: 'Balance Alerts' },
   whale:      { emoji: '🐋', label: 'Whale Tracker' },
+  price:      { emoji: '📉', label: 'Price Drop Alert' },
   mento:      { emoji: '🏦', label: 'Mento Positions' },
   governance: { emoji: '🗳️', label: 'Governance' },
 };
@@ -28,6 +29,7 @@ function protocolsKeyboard(user: User) {
   };
   return Markup.inlineKeyboard([
     [row('balance'), row('whale')],
+    [row('price')],
     [row('mento'),   row('governance')],
   ]);
 }
@@ -92,17 +94,23 @@ export function setupBot(
       return ctx.reply('❌ Invalid address.\n\nUsage: /register <code>0x…</code>', { parse_mode: 'HTML' });
     }
 
-    registerUser(state, ctx.chat.id, wallet);
+    const user = registerUser(state, ctx.chat.id, wallet);
     await ctx.reply(
       [
         '✅ <b>Wallet registered!</b>',
         '',
         `Address: <code>${wallet}</code>`,
         '',
-        `Active alerts: Balance + Whale Tracker`,
-        `Use /protocols to customise.`,
+        '📡 <b>Now choose what you want to be alerted about.</b>',
+        'Tap to toggle each alert type on or off:',
       ].join('\n'),
       { parse_mode: 'HTML' },
+    );
+    // Immediately show the protocols keyboard so the user picks preferences
+    // before the first watcher tick fires — no unsolicited spam
+    await ctx.reply(
+      '⚙️ <b>Alert Preferences</b>\n\nAll alerts are <b>off by default</b> — tap to enable what you want:',
+      { parse_mode: 'HTML', ...protocolsKeyboard(user) },
     );
   });
 
@@ -119,7 +127,7 @@ export function setupBot(
   });
 
   // Callback for each protocol toggle
-  const PROTOCOLS: Protocol[] = ['balance', 'whale', 'mento', 'governance'];
+  const PROTOCOLS: Protocol[] = ['balance', 'whale', 'price', 'mento', 'governance'];
   for (const p of PROTOCOLS) {
     bot.action(`toggle_${p}`, async (ctx) => {
       const user = getUser(state, ctx.chat!.id);
@@ -400,6 +408,21 @@ export function setupBot(
     saveState(state);
     await ctx.reply('✅ Email removed. You will no longer receive digest emails.');
   });
+
+  // ── Register command list with Telegram ──────────────────────────────────
+  bot.telegram.setMyCommands([
+    { command: 'start',       description: 'Welcome message & quick guide' },
+    { command: 'register',    description: 'Start monitoring a wallet — /register 0x…' },
+    { command: 'status',      description: 'View live CELO + cUSD balances' },
+    { command: 'check',       description: 'Run an immediate wallet scan' },
+    { command: 'protocols',   description: 'Toggle which alert types you receive' },
+    { command: 'email',       description: 'Set email for daily digest — /email you@…' },
+    { command: 'verify',      description: 'Verify identity via Self Protocol (ZK passport)' },
+    { command: 'test',        description: 'Fire example alerts & write an onchain receipt' },
+    { command: 'removeemail', description: 'Remove your registered email' },
+    { command: 'unregister',  description: 'Stop monitoring your wallet' },
+    { command: 'help',        description: 'Show all commands' },
+  ]).catch(err => console.error('[Bot] Failed to set commands:', err));
 
   bot.catch((err: any) => {
     if (err?.response?.error_code === 409) {
