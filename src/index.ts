@@ -82,6 +82,9 @@ async function main() {
                 ),
               } : undefined,
             });
+            // Stamp cooldown so this alert type won't re-fire within its window
+            if (!user.alertCooldowns) user.alertCooldowns = {};
+            user.alertCooldowns[alert.type] = Date.now();
             const txHash = await writeReceipt(agentWallet, alert.type, user.walletAddress);
             if (txHash) {
               await bot.telegram.sendMessage(
@@ -138,6 +141,69 @@ async function main() {
       }
 
       state.lastWhaleBlock = currentBlock;
+    }
+
+    // ── Price drop alert (global — alerts all users with price protocol) ────
+    const priceUsers = users.filter(u => u.protocols.includes('price'));
+    if (priceUsers.length > 0) {
+      try {
+        const celoPrice = await getCELOPrice(provider);
+
+        // Initialise reference on first run
+        if (!state.celoPriceRef) {
+          state.celoPriceRef = celoPrice;
+          console.log(`[Price] Reference set: $${celoPrice.toFixed(4)}`);
+        } else {
+          const dropPct = ((state.celoPriceRef - celoPrice) / state.celoPriceRef) * 100;
+          console.log(`[Price] CELO $${celoPrice.toFixed(4)} | ref $${state.celoPriceRef.toFixed(4)} | Δ ${dropPct > 0 ? '-' : '+'}${Math.abs(dropPct).toFixed(2)}%`);
+
+          if (dropPct >= config.priceDropPct) {
+            const msg = [
+              `📉 <b>CELO Price Drop Alert</b>`,
+              ``,
+              `CELO has dropped <b>${dropPct.toFixed(1)}%</b> from your alert reference.`,
+              ``,
+              `Current price: <b>$${celoPrice.toFixed(4)}</b>`,
+              `Reference price: <b>$${state.celoPriceRef.toFixed(4)}</b>`,
+              ``,
+              `⚠️ If you hold CELO as collateral in any DeFi position, check your health factor now.`,
+            ].join('\n');
+
+            for (const user of priceUsers) {
+              const cooldowns = user.alertCooldowns ?? {};
+              const lastSent  = cooldowns['price_drop'] ?? 0;
+              const cooldownMs = 2 * 60 * 60 * 1000; // 2 hours
+              if (Date.now() - lastSent < cooldownMs) continue;
+
+              try {
+                await bot.telegram.sendMessage(user.chatId, msg, {
+                  parse_mode: 'HTML',
+                  reply_markup: {
+                    inline_keyboard: [[
+                      { text: '📊 Check wallet', url: `https://celoscan.io/address/${user.walletAddress}` },
+                      { text: '🔄 Swap on Mento', url: 'https://app.mento.finance/swap' },
+                    ]],
+                  },
+                });
+                if (!user.alertCooldowns) user.alertCooldowns = {};
+                user.alertCooldowns['price_drop'] = Date.now();
+                user.alertCount++;
+              } catch {}
+            }
+
+            // Reset reference so next drop is measured from the new price level
+            state.celoPriceRef = celoPrice;
+            console.log(`[Price] Alert fired — reference reset to $${celoPrice.toFixed(4)}`);
+          }
+
+          // Gradually walk reference up if price rises (track from recent highs)
+          if (celoPrice > state.celoPriceRef) {
+            state.celoPriceRef = celoPrice;
+          }
+        }
+      } catch (err) {
+        console.error('[Price] Detection error:', err);
+      }
     }
 
     saveState(state);
