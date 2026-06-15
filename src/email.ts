@@ -35,9 +35,12 @@ if (config.smtpUser && config.smtpPass) {
     secure: config.smtpPort === 465, // true for SSL (465), false for STARTTLS (587)
     auth: {
       user: config.smtpUser,
-      pass: config.smtpPass,   // app password — never your real account password
+      pass: config.smtpPass,
     },
-  });
+    // Explicitly force IPv4 network family for Render
+    family: 4,
+    connectionTimeout: 10000,
+  } as any);
   console.log(`[Email] SMTP ready → ${config.smtpUser} via ${config.smtpHost}:${config.smtpPort}`);
 } else {
   console.log('[Email] SMTP_USER / SMTP_PASS not set — email disabled');
