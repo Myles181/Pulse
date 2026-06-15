@@ -409,5 +409,27 @@ export function setupBot(
     console.error('[Bot]', err);
   });
 
+  // ── Register command list + menu button with Telegram ────────────────────
+  // setMyCommands: populates the "/" command list with descriptions
+  bot.telegram.setMyCommands([
+    { command: 'start',       description: 'Welcome message & quick guide' },
+    { command: 'register',    description: 'Start monitoring a wallet — /register 0x…' },
+    { command: 'status',      description: 'View live CELO + cUSD balances' },
+    { command: 'check',       description: 'Run an immediate wallet scan' },
+    { command: 'protocols',   description: 'Toggle which alert types you receive' },
+    { command: 'email',       description: 'Set email for daily digest — /email you@…' },
+    { command: 'verify',      description: 'Verify identity via Self Protocol (ZK passport)' },
+    { command: 'test',        description: 'Fire example alerts & write an onchain receipt' },
+    { command: 'removeemail', description: 'Remove your registered email' },
+    { command: 'unregister',  description: 'Stop monitoring your wallet' },
+    { command: 'help',        description: 'Show all commands' },
+  ]).catch(err => console.error('[Bot] Failed to set commands:', err));
+
+  // setChatMenuButton: replaces the attachment icon with a persistent ☰ button
+  // Users tap it to open the full command list without typing anything
+  bot.telegram.setChatMenuButton({
+    menuButton: { type: 'commands' },
+  }).catch(err => console.error('[Bot] Failed to set menu button:', err));
+
   return bot;
 }
