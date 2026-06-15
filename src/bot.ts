@@ -6,6 +6,7 @@ import { writeReceipt } from './onchain.js';
 import { formatWhaleAlert, DEMO_WHALE } from './whale.js';
 import { encryptEmail, sendWelcomeEmail } from './email.js';
 import { generateVerifyLink } from './verify.js';
+import { getCELOPrice } from './price.js';
 import type { AppState, User, Protocol } from './types.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -94,7 +95,14 @@ export function setupBot(
       return ctx.reply('❌ Invalid address.\n\nUsage: /register <code>0x…</code>', { parse_mode: 'HTML' });
     }
 
-    const user = registerUser(state, ctx.chat.id, wallet);
+    let celoPrice: number | undefined;
+    try {
+      celoPrice = await getCELOPrice(provider);
+    } catch (err) {
+      console.error('[Bot] Failed to fetch CELO price on register:', err);
+    }
+
+    const user = registerUser(state, ctx.chat.id, wallet, celoPrice);
     await ctx.reply(
       [
         '✅ <b>Wallet registered!</b>',

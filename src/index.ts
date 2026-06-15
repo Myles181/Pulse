@@ -2,13 +2,14 @@ import { ethers } from 'ethers';
 import { config } from './config.js';
 import { loadState, saveState, getAllUsers } from './storage.js';
 import { detectAlerts } from './alerts.js';
-import { writeReceipt } from './onchain.js';
+import { writeReceipt, writeHeartbeat } from './onchain.js';
 import { scanWhales, formatWhaleAlert, whaleButtons } from './whale.js';
 import { getCELOPrice } from './price.js';
 import { sendAllDigests } from './email.js';
 import { initVerifier } from './verify.js';
 import { createServer, setVerifier } from './server.js';
 import { setupBot } from './bot.js';
+import { checkDeFiAlerts } from './defi.js';
 
 const CUSD = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
 const ERC20_ABI = ['function balanceOf(address) view returns (uint256)'];
@@ -34,10 +35,11 @@ async function main() {
   console.log('  ─────────────────────────────────────────────');
   console.log(`  Agent wallet : ${agentAddress}`);
   console.log(`  Agent balance: ${parseFloat(agentBalance).toFixed(4)} CELO`);
-  console.log(`  Agent ID     : ${config.agentId} → https://8004scan.io/agents/${config.agentId}`);
+  console.log(`  Agent ID     : ${config.agentId} → https://8004scan.io/agents/celo/${config.agentId}`);
   console.log(`  RPC          : ${config.rpcUrl}`);
   console.log(`  Watch interval: ${config.watchIntervalMs / 1000}s`);
   console.log(`  Whale threshold: ${config.whaleCELO.toLocaleString()} CELO / $${config.whaleUSD.toLocaleString()}`);
+  console.log(`  Price drop alert: ${config.priceDropPct}% drop triggers alert`);
   console.log('');
 
   // Self Protocol identity verification
@@ -104,8 +106,49 @@ async function main() {
         user.lastCUSD = cusdBal;
         user.lastBlock = currentBlock;
         state.users[String(user.chatId)] = user;
+
+        // ── Per-user health check receipt (generates onchain volume every tick) ─
+        writeReceipt(agentWallet, 'health_check', user.walletAddress).catch(() => {});
+
       } catch (err) {
         console.error(`[Watcher] Error for wallet ${user.walletAddress}:`, err);
+      }
+    }
+
+    // ── DeFi alerts (users with 'mento' protocol) ─────────────────────────
+    const mentoUsers = users.filter(u => u.protocols.includes('mento'));
+    for (const user of mentoUsers) {
+      try {
+        const defiAlerts = await checkDeFiAlerts(user, state, provider);
+        for (const alert of defiAlerts) {
+          try {
+            await bot.telegram.sendMessage(user.chatId, alert.message, {
+              parse_mode: 'HTML',
+              reply_markup: alert.buttons ? {
+                inline_keyboard: alert.buttons.map(row =>
+                  row.map(btn => ({ text: btn.text, url: btn.url }))
+                ),
+              } : undefined,
+            });
+            if (!user.alertCooldowns) user.alertCooldowns = {};
+            user.alertCooldowns[alert.type] = Date.now();
+            user.alertCount++;
+            state.users[String(user.chatId)] = user;
+            const txHash = await writeReceipt(agentWallet, alert.type, user.walletAddress);
+            if (txHash) {
+              await bot.telegram.sendMessage(
+                user.chatId,
+                `📝 Onchain receipt: <a href="https://celoscan.io/tx/${txHash}">celoscan.io</a>`,
+                { parse_mode: 'HTML' },
+              );
+            }
+            console.log(`[DeFi] ${alert.type} → chat:${user.chatId}`);
+          } catch (err) {
+            console.error('[DeFi] Delivery failed:', err);
+          }
+        }
+      } catch (err) {
+        console.error(`[DeFi] Check error for ${user.walletAddress}:`, err);
       }
     }
 
@@ -205,6 +248,9 @@ async function main() {
         console.error('[Price] Detection error:', err);
       }
     }
+
+    // ── Heartbeat — writes a tx every tick for continuous onchain volume ──────
+    writeHeartbeat(agentWallet, users.length, currentBlock).catch(() => {});
 
     saveState(state);
   }

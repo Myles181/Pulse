@@ -33,7 +33,7 @@ export function saveState(state: AppState): void {
   fs.writeFileSync(DATA_FILE, JSON.stringify(state, null, 2));
 }
 
-export function registerUser(state: AppState, chatId: number, wallet: string): User {
+export function registerUser(state: AppState, chatId: number, wallet: string, celoPrice?: number): User {
   const user: User = {
     chatId,
     walletAddress: wallet.toLowerCase(),
@@ -43,6 +43,7 @@ export function registerUser(state: AppState, chatId: number, wallet: string): U
     alertCount: 0,
     registeredAt: Date.now(),
     protocols: [...DEFAULT_PROTOCOLS],
+    celoPriceAtRegistration: celoPrice,
   };
   state.users[String(chatId)] = user;
   saveState(state);

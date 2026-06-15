@@ -3,6 +3,7 @@ import { config } from './config.js';
 
 const REPUTATION_REGISTRY = '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63';
 const IDENTITY_REGISTRY   = '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432';
+const AGENT_LINK          = 'https://8004scan.io/agents/celo/9358';
 
 // Try to call giveFeedback — falls back to a self-transfer if ABI mismatches
 const FEEDBACK_ABI = [
@@ -59,5 +60,29 @@ export async function writeReceipt(
         return null;
       }
     }
+  }
+}
+
+// ── Heartbeat — runs every watcher tick to generate continuous onchain volume ──
+// Uses a 0-value self-transfer with encoded metadata (minimal gas, max frequency)
+export async function writeHeartbeat(
+  wallet: ethers.Wallet,
+  userCount: number,
+  blockNumber: number,
+): Promise<string | null> {
+  try {
+    const agentAddr = await wallet.getAddress();
+    const payload   = `pulse:hb:${userCount}w:b${blockNumber}`;
+    const tx = await wallet.sendTransaction({
+      to:    agentAddr,
+      value: 0n,
+      data:  ethers.hexlify(ethers.toUtf8Bytes(payload)),
+    });
+    const receipt = await tx.wait();
+    console.log(`[Heartbeat] ${payload} → ${tx.hash} (block ${receipt?.blockNumber})`);
+    return tx.hash;
+  } catch (err: any) {
+    console.error('[Heartbeat] Failed:', err?.shortMessage ?? err?.message);
+    return null;
   }
 }

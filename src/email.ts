@@ -1,5 +1,5 @@
 import EthCrypto from 'eth-crypto';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { ethers } from 'ethers';
 import { config } from './config.js';
 import { getAllUsers, saveState } from './storage.js';
@@ -20,28 +20,32 @@ export async function decryptEmail(encryptedJson: string): Promise<string> {
   return EthCrypto.decryptWithPrivateKey(rawKey, encrypted);
 }
 
-// ── Email sending via Resend ──────────────────────────────────────────────────
-let resend: Resend | null = null;
-if (config.resendApiKey) {
-  resend = new Resend(config.resendApiKey);
+// ── Email sending via SMTP (app password) ─────────────────────────────────────
+let transporter: nodemailer.Transporter | null = null;
+
+if (config.smtpUser && config.smtpPass) {
+  transporter = nodemailer.createTransport({
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpPort === 465, // true for SSL (465), false for STARTTLS (587)
+    auth: {
+      user: config.smtpUser,
+      pass: config.smtpPass,   // app password — never your real account password
+    },
+  });
+  console.log(`[Email] SMTP ready → ${config.smtpUser} via ${config.smtpHost}:${config.smtpPort}`);
+} else {
+  console.log('[Email] SMTP_USER / SMTP_PASS not set — email disabled');
 }
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  if (!resend) {
-    console.warn('[Email] RESEND_API_KEY not set, skipping send');
+  if (!transporter) {
+    console.warn('[Email] No SMTP transporter — skipping send');
     return false;
   }
+  const from = config.emailFrom || `Pulse <${config.smtpUser}>`;
   try {
-    const { error } = await resend.emails.send({
-      from: config.emailFrom,
-      to: [to],
-      subject,
-      html,
-    });
-    if (error) {
-      console.error('[Email] Resend error:', error);
-      return false;
-    }
+    await transporter.sendMail({ from, to, subject, html });
     console.log(`[Email] Sent to ${to}`);
     return true;
   } catch (err) {

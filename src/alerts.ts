@@ -6,11 +6,14 @@ const celoscan  = (addr: string) => `https://celoscan.io/address/${addr}`;
 
 // How long (ms) before the same alert type can fire again per user
 const COOLDOWNS: Record<string, number> = {
-  low_celo:        4 * 60 * 60 * 1000, // 4 hours
-  low_cusd:        4 * 60 * 60 * 1000, // 4 hours
-  large_outgoing:  1 * 60 * 60 * 1000, // 1 hour
-  large_incoming:  1 * 60 * 60 * 1000, // 1 hour
-  price_drop:      2 * 60 * 60 * 1000, // 2 hours
+  low_celo:          4 * 60 * 60 * 1000, // 4 hours
+  low_cusd:          4 * 60 * 60 * 1000, // 4 hours
+  large_outgoing:    1 * 60 * 60 * 1000, // 1 hour
+  large_incoming:    1 * 60 * 60 * 1000, // 1 hour
+  price_drop:        2 * 60 * 60 * 1000, // 2 hours
+  defi_depeg:        6 * 60 * 60 * 1000, // 6 hours
+  defi_reserve:      6 * 60 * 60 * 1000, // 6 hours
+  defi_price_entry:  6 * 60 * 60 * 1000, // 6 hours
 };
 
 function isCoolingDown(user: User, alertType: string): boolean {
