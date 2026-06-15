@@ -1,9 +1,14 @@
 import EthCrypto from 'eth-crypto';
 import nodemailer from 'nodemailer';
 import { ethers } from 'ethers';
+import dns from 'dns';
 import { config } from './config.js';
 import { getAllUsers, saveState } from './storage.js';
 import type { AppState } from './types.js';
+
+// Force Node.js to use IPv4 to fix ENETUNREACH errors on Render/cloud hosts
+// trying to route SMTP over unroutable IPv6 interfaces
+dns.setDefaultResultOrder('ipv4first');
 
 // Derive agent public key once from private key
 const rawKey = config.privateKey.startsWith('0x') ? config.privateKey.slice(2) : config.privateKey;

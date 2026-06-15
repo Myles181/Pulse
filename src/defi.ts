@@ -4,7 +4,7 @@ import type { AppState, User, Alert } from './types.js';
 
 // ── Contract addresses (Celo Mainnet) ────────────────────────────────────────
 const SORTED_ORACLES  = '0xefB84935239dAcdecF7c5bA76d8dE40b077B7b33';
-const BIPOOL_MANAGER  = '0x22d9db95E6Ae61c104a7B6F6C78D7993B94ec901';
+const BIPOOL_MANAGER  = '0x22d9db95e6ae61c104a7b6f6c78d7993b94ec901';
 const CUSD            = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
 
 // ── ABIs ─────────────────────────────────────────────────────────────────────
