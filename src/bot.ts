@@ -11,6 +11,8 @@ import type { AppState, User, Protocol } from './types.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const awaitingInput = new Map<number, 'register' | 'email'>();
+
 const CUSD = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
 const ERC20_ABI = ['function balanceOf(address) view returns (uint256)'];
 
@@ -87,11 +89,8 @@ export function setupBot(
   });
 
   // ── /register ────────────────────────────────────────────────────────────
-  bot.command('register', async (ctx) => {
-    const parts = ctx.message.text.trim().split(/\s+/);
-    const wallet = parts[1];
-
-    if (!wallet || !ethers.isAddress(wallet)) {
+  async function processRegister(ctx: any, wallet: string) {
+    if (!ethers.isAddress(wallet)) {
       return ctx.reply('❌ Invalid address.\n\nUsage: /register <code>0x…</code>', { parse_mode: 'HTML' });
     }
 
@@ -114,12 +113,21 @@ export function setupBot(
       ].join('\n'),
       { parse_mode: 'HTML' },
     );
-    // Immediately show the protocols keyboard so the user picks preferences
-    // before the first watcher tick fires — no unsolicited spam
     await ctx.reply(
       '⚙️ <b>Alert Preferences</b>\n\nAll alerts are <b>off by default</b> — tap to enable what you want:',
       { parse_mode: 'HTML', ...protocolsKeyboard(user) },
     );
+  }
+
+  bot.command('register', async (ctx) => {
+    const parts = ctx.message.text.trim().split(/\s+/);
+    const wallet = parts[1];
+
+    if (!wallet) {
+      awaitingInput.set(ctx.chat.id, 'register');
+      return ctx.reply('Please send your Celo wallet address (e.g., <code>0x…</code>):', { parse_mode: 'HTML' });
+    }
+    await processRegister(ctx, wallet);
   });
 
   // ── /protocols ────────────────────────────────────────────────────────────
@@ -290,32 +298,7 @@ export function setupBot(
   });
 
   // ── /email ────────────────────────────────────────────────────────────────
-  bot.command('email', async (ctx) => {
-    const user = getUser(state, ctx.chat.id);
-    if (!user) {
-      return ctx.reply('Register first: /register <code>0x…</code>', { parse_mode: 'HTML' });
-    }
-
-    const parts = ctx.message.text.trim().split(/\s+/);
-    const emailInput = parts[1];
-
-    if (!emailInput) {
-      const status = user.encryptedEmail ? '✅ Email registered' : '❌ No email registered';
-      return ctx.reply(
-        [
-          `📧 <b>Email Notifications</b>`,
-          '',
-          status,
-          '',
-          'Add your email for daily digests:',
-          '/email <code>you@example.com</code>',
-          '',
-          'Your email is encrypted with the agent\'s public key and never stored in plaintext.',
-        ].join('\n'),
-        { parse_mode: 'HTML' },
-      );
-    }
-
+  async function processEmail(ctx: any, user: User, emailInput: string) {
     if (!EMAIL_REGEX.test(emailInput)) {
       return ctx.reply('❌ Invalid email address.');
     }
@@ -350,13 +333,40 @@ export function setupBot(
         if (ok) {
           ctx.reply('📧 Welcome email sent! Check your inbox.');
         } else {
-          ctx.reply('⚠️ Could not send welcome email. Check RESEND_API_KEY in config.');
+          ctx.reply('⚠️ Could not send welcome email. Check SMTP settings.');
         }
       });
     } catch (err) {
       await ctx.reply('❌ Failed to register email. Try again.');
       console.error('[Email cmd]', err);
     }
+  }
+
+  bot.command('email', async (ctx) => {
+    const user = getUser(state, ctx.chat.id);
+    if (!user) {
+      return ctx.reply('Register first: /register <code>0x…</code>', { parse_mode: 'HTML' });
+    }
+
+    const parts = ctx.message.text.trim().split(/\s+/);
+    const emailInput = parts[1];
+
+    if (!emailInput) {
+      awaitingInput.set(ctx.chat.id, 'email');
+      const status = user.encryptedEmail ? '✅ You have an email registered.' : '❌ No email registered.';
+      return ctx.reply(
+        [
+          `📧 <b>Email Notifications</b>`,
+          '',
+          status,
+          '',
+          'Please send the email address you want to use for daily digests:',
+        ].join('\n'),
+        { parse_mode: 'HTML' },
+      );
+    }
+
+    await processEmail(ctx, user, emailInput);
   });
 
   // ── /verify (Self Protocol) ───────────────────────────────────────────────
@@ -461,6 +471,30 @@ export function setupBot(
   bot.telegram.setChatMenuButton({
     menuButton: { type: 'commands' },
   }).catch(err => console.error('[Bot] Failed to set menu button:', err));
+
+  bot.on('message', async (ctx, next) => {
+    // If it's a command, let standard handlers catch it
+    if ('text' in ctx.message && ctx.message.text.startsWith('/')) {
+      awaitingInput.delete(ctx.chat.id); // clear state if they send a new command
+      return next();
+    }
+
+    const expected = awaitingInput.get(ctx.chat.id);
+    if (expected && 'text' in ctx.message) {
+      const input = ctx.message.text.trim();
+      awaitingInput.delete(ctx.chat.id);
+
+      if (expected === 'register') {
+        return processRegister(ctx, input);
+      } else if (expected === 'email') {
+        const user = getUser(state, ctx.chat.id);
+        if (!user) return ctx.reply('Register first: /register');
+        return processEmail(ctx, user, input);
+      }
+    }
+    
+    return next();
+  });
 
   return bot;
 }
