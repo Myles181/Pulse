@@ -41,14 +41,18 @@ async function getCUSDExchangeId(provider: ethers.JsonRpcProvider): Promise<stri
     const bipool = new ethers.Contract(BIPOOL_MANAGER, BIPOOL_ABI, provider);
     const ids: string[] = await bipool.getExchanges();
     for (const id of ids) {
-      const ex = await bipool.getPoolExchange(id);
-      if (
-        ex.asset0.toLowerCase() === CUSD.toLowerCase() ||
-        ex.asset1.toLowerCase() === CUSD.toLowerCase()
-      ) {
-        cachedExchangeId = id;
-        console.log(`[DeFi] cUSD exchange ID: ${id}`);
-        return id;
+      try {
+        const ex = await bipool.getPoolExchange(id);
+        if (
+          ex.asset0.toLowerCase() === CUSD.toLowerCase() ||
+          ex.asset1.toLowerCase() === CUSD.toLowerCase()
+        ) {
+          cachedExchangeId = id;
+          console.log(`[DeFi] cUSD exchange ID: ${id}`);
+          return id;
+        }
+      } catch (innerErr) {
+        // Skip retired/invalid exchanges that revert
       }
     }
   } catch (err) {
