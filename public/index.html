@@ -16,33 +16,34 @@
       theme: {
         extend: {
           colors: {
-            ink:    '#0a0706',   // near-black, warm
+            ink:    '#0a0706',
             ink2:   '#100b08',
-            char:   '#17110c',   // charcoal
+            char:   '#17110c',
             char2:  '#1f160f',
             line:   '#2c2017',
             line2:  '#3a2a1b',
-            faint:  '#9b8978',
-            faint2: '#6d5d4e',
+            faint:  '#a3917f',
+            faint2: '#71614f',
             ember:  '#ff7a18',
           },
           fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-            mono: ['Menlo', 'Monaco', 'Courier New', 'monospace'],
+            sans: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"Space Grotesk"', 'ui-monospace', 'Menlo', 'monospace'],
+            code: ['"JetBrains Mono"', 'Menlo', 'Monaco', 'monospace'],
           },
           keyframes: {
             fadeUp: { '0%': { opacity: 0, transform: 'translateY(22px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-            floaty: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-14px)' } },
-            pulseRing: { '0%': { transform: 'scale(.85)', opacity: .6 }, '100%': { transform: 'scale(1.6)', opacity: 0 } },
-            spinSlow: { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+            floaty: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-12px)' } },
+            pulseRing: { '0%': { transform: 'scale(.85)', opacity: .6 }, '100%': { transform: 'scale(1.7)', opacity: 0 } },
+            breathe: { '0%,100%': { opacity: .5, transform: 'scale(1)' }, '50%': { opacity: .85, transform: 'scale(1.06)' } },
             shimmer: { '0%': { backgroundPosition: '0% 50%' }, '100%': { backgroundPosition: '200% 50%' } },
           },
           animation: {
             fadeUp: 'fadeUp .8s cubic-bezier(.16,1,.3,1) both',
-            floaty: 'floaty 6s ease-in-out infinite',
-            pulseRing: 'pulseRing 2.6s ease-out infinite',
-            spinSlow: 'spinSlow 26s linear infinite',
-            shimmer: 'shimmer 5s linear infinite',
+            floaty: 'floaty 7s ease-in-out infinite',
+            pulseRing: 'pulseRing 2.8s ease-out infinite',
+            breathe: 'breathe 8s ease-in-out infinite',
+            shimmer: 'shimmer 6s linear infinite',
           },
         },
       },
@@ -55,54 +56,66 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <style>
     html, body { overflow-x: hidden; max-width: 100%; }
     body { background: #0a0706; }
 
-    /* ── Cursor "gas" glow (amber, soft — not neon) ─────────────────────────── */
+    /* Themed scrollbar — the burnt-amber UI color on charcoal */
+    html { scrollbar-width: thin; scrollbar-color: #ea580c #100b08; }
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: #100b08; }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #ffb347, #ff7a18 45%, #ea580c);
+      border-radius: 8px; border: 3px solid #100b08;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #ffc066, #ff8a32, #f2620d); }
+
+    /* 3D flip card */
+    .flip-inner { transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+    .flip-face { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+
+    /* Cursor "gas" glow (amber, soft) */
     #gas {
       position: fixed; inset: 0; pointer-events: none; z-index: 0;
       background:
-        radial-gradient(620px circle at var(--mx,50%) var(--my,50%), rgba(255,138,40,.13), transparent 42%),
-        radial-gradient(1100px circle at var(--mx,50%) var(--my,50%), rgba(245,158,11,.07), transparent 52%),
+        radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(255,138,40,.12), transparent 42%),
+        radial-gradient(1100px circle at var(--mx,50%) var(--my,50%), rgba(245,158,11,.06), transparent 52%),
         radial-gradient(ellipse 80% 50% at 50% -10%, rgba(234,88,12,.10), transparent 60%),
-        radial-gradient(ellipse 60% 45% at 85% 88%, rgba(255,122,24,.07), transparent 60%);
+        radial-gradient(ellipse 60% 45% at 85% 90%, rgba(255,122,24,.06), transparent 60%);
       transition: background .12s ease;
     }
 
-    /* ── Scroll reveal ──────────────────────────────────────────────────────── */
-    .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
-    .reveal.l { transform: translateX(-30px); }
-    .reveal.r { transform: translateX(30px); }
-    .reveal.s { transform: scale(.94) translateY(16px); }
+    /* Scroll reveal */
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+    .reveal.l { transform: translateX(-22px); }
+    .reveal.r { transform: translateX(22px); }
+    .reveal.s { transform: scale(.95) translateY(14px); }
     .reveal.show { opacity: 1; transform: none; }
 
     .lineReveal { transform-origin: left; transform: scaleX(0); transition: transform .9s cubic-bezier(.16,1,.3,1); }
     .lineReveal.show { transform: scaleX(1); }
 
-    /* Gradient text */
-    .grad {
-      background: linear-gradient(100deg, #ffb347 0%, #ff7a18 45%, #ea580c 100%);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .grad-anim {
-      background: linear-gradient(100deg, #ffd08a, #ff7a18, #ea580c, #ffb347);
-      background-size: 200% 50%;
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    .grad { background: linear-gradient(100deg,#ffb347 0%,#ff7a18 48%,#ea580c 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .grad-anim { background: linear-gradient(100deg,#ffd08a,#ff7a18,#ea580c,#ffb347); background-size: 200% 50%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+    /* Robot blend into the hero — feather edges + warm grade */
+    .blend-img {
+      -webkit-mask-image: radial-gradient(ellipse 72% 78% at 52% 42%, #000 46%, rgba(0,0,0,.35) 68%, transparent 84%);
+      mask-image: radial-gradient(ellipse 72% 78% at 52% 42%, #000 46%, rgba(0,0,0,.35) 68%, transparent 84%);
+      filter: saturate(.9) contrast(1.04) brightness(.94) sepia(.12) hue-rotate(-8deg);
     }
 
-    /* thin custom scrollbar for code blocks */
     pre::-webkit-scrollbar { height: 8px; }
-    pre::-webkit-scrollbar-thumb { background: #3a2a1b; border-radius: 8px; }
+    pre::-webkit-scrollbar-thumb { background: #3a2a1b; border-radius: 4px; }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
     }
   </style>
 </head>
-<body class="font-sans text-[#f1e7dc] antialiased selection:bg-orange-500/30">
+<body class="font-sans text-[#efe4d8] antialiased selection:bg-orange-500/30">
 
 <div id="gas"></div>
 <div id="root" class="relative z-[1]"></div>
@@ -110,61 +123,83 @@
 <script type="text/babel" data-presets="react">
 const { useEffect, useRef, useState } = React;
 
-/* ───────────────────────── helpers / hooks ───────────────────────── */
+/* ─────────────── icons (inline SVG, stroke style) ─────────────── */
+const PATHS = {
+  link: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></>,
+  sliders: <><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></>,
+  bell: <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>,
+  whale: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>,
+  wallet: <><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></>,
+  mail: <><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></>,
+  shield: <><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></>,
+  settings: <><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></>,
+  check: <path d="M20 6 9 17l-5-5"/>,
+  x: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
+  database: <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></>,
+  unlock: <><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></>,
+  eyeOff: <><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></>,
+  box: <><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></>,
+  ban: <><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></>,
+  lock: <><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+  globe: <><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></>,
+  cpu: <><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></>,
+  telegram: <><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></>,
+  github: <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>,
+  scan: <><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></>,
+  book: <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>,
+};
 
-// Reveal-on-scroll wrapper
+function Icon({ name, className = '', size = 22, strokeWidth = 1.6 }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
+         strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      {PATHS[name]}
+    </svg>
+  );
+}
+
+/* ─────────────── hooks / reveal ─────────────── */
 function Reveal({ as = 'div', variant = '', delay = 0, className = '', children, ...rest }) {
   const ref = useRef(null);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const el = ref.current; if (!el) return;
     const io = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) { setTimeout(() => el.classList.add('show'), delay); io.unobserve(el); }
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-    io.observe(el);
-    return () => io.disconnect();
+    io.observe(el); return () => io.disconnect();
   }, [delay]);
   const Tag = as;
   return <Tag ref={ref} className={`reveal ${variant} ${className}`} {...rest}>{children}</Tag>;
 }
 
-// Stagger children with reveal
-function Stagger({ className = '', step = 90, children }) {
+function Stagger({ className = '', step = 85, children }) {
   const ref = useRef(null);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const el = ref.current; if (!el) return;
     const io = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        [...el.children].forEach((c, i) => {
-          c.classList.add('reveal');
-          setTimeout(() => c.classList.add('show'), i * step);
-        });
+        [...el.children].forEach((c, i) => { c.classList.add('reveal'); setTimeout(() => c.classList.add('show'), i * step); });
         io.unobserve(el);
       }
     }, { threshold: 0.08 });
-    io.observe(el);
-    return () => io.disconnect();
+    io.observe(el); return () => io.disconnect();
   }, [step]);
   return <div ref={ref} className={className}>{children}</div>;
 }
 
-// Animated divider line
 function Line() {
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
     const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { el.classList.add('show'); io.unobserve(el); } }, { threshold: 0.5 });
-    io.observe(el);
-    return () => io.disconnect();
+    io.observe(el); return () => io.disconnect();
   }, []);
-  return <hr ref={ref} className="lineReveal border-0 border-t border-line/80 max-w-6xl mx-auto" />;
+  return <hr ref={ref} className="lineReveal border-0 border-t border-line/70 max-w-6xl mx-auto" />;
 }
 
-// Counting number
 function Counter({ value, suffix = '', decimals = 0 }) {
   const ref = useRef(null);
-  const [txt, setTxt] = useState(decimals ? (0).toFixed(decimals) + suffix : '0' + suffix);
+  const [txt, setTxt] = useState((decimals ? (0).toFixed(decimals) : '0') + suffix);
   useEffect(() => {
     const el = ref.current;
     const io = new IntersectionObserver(([e]) => {
@@ -175,20 +210,17 @@ function Counter({ value, suffix = '', decimals = 0 }) {
         const p = Math.min((now - start) / dur, 1);
         const ease = 1 - Math.pow(1 - p, 4);
         const v = value * ease;
-        setTxt(decimals ? v.toFixed(decimals) + suffix : Math.round(v) + suffix);
+        setTxt((decimals ? v.toFixed(decimals) : Math.round(v)) + suffix);
         if (p < 1) requestAnimationFrame(tick);
       };
-      requestAnimationFrame(tick);
-      io.unobserve(el);
+      requestAnimationFrame(tick); io.unobserve(el);
     }, { threshold: 0.5 });
-    io.observe(el);
-    return () => io.disconnect();
+    io.observe(el); return () => io.disconnect();
   }, [value, suffix, decimals]);
   return <span ref={ref}>{txt}</span>;
 }
 
-/* ───────────────────────── data ───────────────────────── */
-
+/* ─────────────── data ─────────────── */
 const HERO_IMG = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb8dvSvQAtT3Z4F1sXaJ9b750S8AbBJ6VbtC66ey57aw&s=10";
 
 const METRICS = [
@@ -199,115 +231,117 @@ const METRICS = [
 ];
 
 const STEPS = [
-  { n: '01', icon: '🔗', title: 'Register your wallet', body: <>Send <Code>/register 0xYourWallet</Code> to the Pulse Telegram bot. No email, no sign-up, no password.</> },
-  { n: '02', icon: '⚙️', title: 'Choose your protocols', body: <>Use <Code>/protocols</Code> to toggle what you care about — balance alerts, whale tracking, or both. Every toggle is recorded onchain.</> },
-  { n: '03', icon: '🔔', title: 'Get notified instantly', body: <>Pulse watches every block. When a threshold is crossed, your Telegram pings in seconds. An immutable receipt is written to the ERC-8004 Reputation Registry.</> },
+  { n: '01', icon: 'link', title: 'Register your wallet', body: <>Send <Code>/register 0xYourWallet</Code> to the Pulse bot. No email, no sign-up, no password.</> },
+  { n: '02', icon: 'sliders', title: 'Choose your protocols', body: <>Use <Code>/protocols</Code> to toggle what you care about — balance alerts, whale tracking, or both. Every toggle is recorded onchain.</> },
+  { n: '03', icon: 'bell', title: 'Get notified instantly', body: <>Pulse watches every block. When a threshold is crossed, your Telegram pings in seconds — and an immutable receipt is written to ERC-8004.</> },
 ];
 
 const BAD = [
-  ['🗄️', 'Your email stored in a centralised database'],
-  ['🔓', 'One breach exposes all user contacts'],
-  ['🕳️', 'No proof of delivery — you just have to trust them'],
-  ['🧱', "Locked to one provider's infrastructure"],
-  ['🚫', 'No wallet awareness — generic, dumb alerts'],
+  ['database', 'Your email stored in a centralised database'],
+  ['unlock', 'One breach exposes all user contacts'],
+  ['eyeOff', 'No proof of delivery — you just have to trust them'],
+  ['box', "Locked to one provider's infrastructure"],
+  ['ban', 'No wallet awareness — generic, dumb alerts'],
 ];
 const GOOD = [
-  ['🔐', 'Email encrypted with agent public key — zero plaintext in storage'],
-  ['🛡️', 'Nothing to breach — encrypted blobs are useless without the key'],
-  ['⛓️', 'Every alert writes an immutable onchain receipt via ERC-8004'],
-  ['🌐', 'Runs on Celo mainnet — always on, no single point of failure'],
-  ['🧠', 'Position-aware alerts — only notifies you about what you actually hold'],
+  ['lock', 'Email encrypted with the agent public key — zero plaintext in storage'],
+  ['shield', 'Nothing to breach — encrypted blobs are useless without the key'],
+  ['link', 'Every alert writes an immutable onchain receipt via ERC-8004'],
+  ['globe', 'Runs on Celo mainnet — always on, no single point of failure'],
+  ['cpu', 'Position-aware alerts — only notifies you about what you actually hold'],
 ];
 
 const FEATURES = [
-  { icon: '🐋', title: 'Whale Tracker', tag: 'Live on mainnet', body: 'Pulse scans every Celo block for large CELO, cUSD, cEUR, and USDC transfers. When a whale moves, you know about it in seconds — with the wallet label if it’s a known exchange or protocol.' },
-  { icon: '💰', title: 'Balance Alerts', tag: 'Configurable', body: 'Get notified when your CELO or cUSD drops below your threshold, or when a large transaction hits your wallet. Thresholds are configurable per user.' },
-  { icon: '📧', title: 'Daily Email Digest', tag: 'Herald-inspired privacy', body: 'Register your email once — Pulse encrypts it with the agent’s public key and never stores it in plaintext. Every morning at 8 AM UTC you get a clean wallet summary in your inbox.' },
-  { icon: '🪪', title: 'Self Protocol Verification', tag: 'Zero-knowledge', body: 'Prove you’re a real human using your passport — without revealing any personal data. ZK proofs mean Pulse knows you’re verified without knowing who you are.' },
+  { icon: 'whale', title: 'Whale Tracker', tag: 'Live on mainnet', body: 'Pulse scans every Celo block for large CELO, cUSD, cEUR, and USDC transfers. When a whale moves, you know in seconds — with the wallet label if it’s a known exchange or protocol.' },
+  { icon: 'wallet', title: 'Balance Alerts', tag: 'Configurable', body: 'Get notified when your CELO or cUSD drops below your threshold, or when a large transaction hits your wallet. Thresholds are configurable per user.' },
+  { icon: 'mail', title: 'Daily Email Digest', tag: 'Privacy-first', body: 'Register your email once — Pulse encrypts it with the agent’s public key and never stores it in plaintext. Every morning at 8 AM UTC you get a clean wallet summary.' },
+  { icon: 'shield', title: 'Self Protocol Verification', tag: 'Zero-knowledge', body: 'Prove you’re a real human with your passport — without revealing any personal data. ZK proofs mean Pulse knows you’re verified without knowing who you are.' },
 ];
 
 const TECH = [
   ['ERC-8004 Registry', 'Pulse is a registered ERC-8004 agent (ID #9358). Every alert writes a feedback receipt to the Reputation Registry — building verifiable onchain history.'],
   ['Mento SortedOracles', "Live CELO/USD price fetched directly from Mento's onchain oracle. No third-party price API, no stale data — the same source Mento itself uses."],
-  ['Self Protocol', "ZK passport verification via Self Protocol. Users prove humanity without revealing identity. Pulse verifies proofs against Celo's IdentityVerificationHub."],
-  ['Native token monitoring', 'Watches CELO, cUSD, cEUR, and bridged USDC — the core Celo token ecosystem — with no dependency on external price feeds or indexers.'],
-  ['Forno RPC', "Connected to Celo's own Forno RPC endpoint. Scans every block for whale activity within seconds of it being finalized on the L2."],
-  ['eth-crypto encryption', "User emails are encrypted client-side with the agent's public key before storage. Decrypted in-memory at send time, then wiped."],
+  ['Self Protocol', "ZK passport verification via Self Protocol. Users prove humanity without revealing identity, checked against Celo's IdentityVerificationHub."],
+  ['Native token monitoring', 'Watches CELO, cUSD, cEUR, and bridged USDC — the core Celo token set — with no dependency on external price feeds or indexers.'],
+  ['Forno RPC', "Connected to Celo's own Forno RPC endpoint. Scans every block for whale activity within seconds of finalization on the L2."],
+  ['eth-crypto encryption', "Emails are encrypted client-side with the agent's public key before storage. Decrypted in-memory at send time, then wiped."],
 ];
 
-/* ───────────────────────── small bits ───────────────────────── */
+const SOCIALS = [
+  { icon: 'telegram', label: 'Telegram', href: 'https://t.me/PulseAgentBot' },
+  { icon: 'github',   label: 'GitHub',   href: 'https://github.com/Myles181/Pulse' },
+  { icon: 'scan',     label: '8004scan', href: 'https://8004scan.io/agents/9358' },
+  { icon: 'book',     label: 'ERC-8004 Docs', href: 'https://docs.celo.org/build-on-celo/build-with-ai/8004' },
+];
 
+/* ─────────────── primitives ─────────────── */
 function Code({ children }) {
-  return <code className="bg-char2 text-orange-300/90 px-1.5 py-0.5 rounded-md text-[.85em] font-mono break-words">{children}</code>;
+  return <code className="rounded-sm bg-char2 px-1.5 py-0.5 font-code text-[.82em] text-orange-300/90 break-words">{children}</code>;
 }
-
 function Badge({ children }) {
-  return <span className="text-[10px] font-bold text-ink bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 rounded-full">{children}</span>;
+  return <span className="rounded-sm bg-gradient-to-r from-amber-400 to-orange-500 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-ink">{children}</span>;
 }
-
 function GhostBtn({ href, children, className = '' }) {
   return (
     <a href={href} target="_blank" rel="noreferrer"
-       className={`inline-flex items-center gap-2 rounded-xl border border-line2 bg-white/[.02] px-6 py-3 text-sm font-medium text-[#f1e7dc] transition hover:border-orange-500/50 hover:bg-orange-500/[.06] ${className}`}>
+       className={`inline-flex items-center gap-2 rounded-md border border-line2 bg-white/[.02] px-6 py-3 text-sm font-medium text-[#efe4d8] transition hover:border-orange-500/50 hover:bg-orange-500/[.06] ${className}`}>
       {children}
     </a>
   );
 }
-
 function PrimaryBtn({ href, children, className = '' }) {
   return (
     <a href={href} target="_blank" rel="noreferrer"
-       className={`group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-orange-600 px-7 py-3 text-[15px] font-bold text-ink shadow-[0_8px_30px_-8px_rgba(255,122,24,.6)] transition hover:shadow-[0_12px_40px_-8px_rgba(255,122,24,.8)] hover:-translate-y-0.5 ${className}`}>
+       className={`inline-flex items-center gap-2 rounded-md bg-gradient-to-r from-amber-400 via-orange-500 to-orange-600 px-7 py-3 text-[15px] font-semibold text-ink shadow-[0_8px_26px_-10px_rgba(255,122,24,.7)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_38px_-10px_rgba(255,122,24,.85)] ${className}`}>
       {children}
     </a>
   );
 }
-
-function SectionLabel({ children }) {
-  return <Reveal variant="l" className="text-[11px] font-bold uppercase tracking-[.16em] grad mb-4">{children}</Reveal>;
+function Eyebrow({ children }) {
+  return (
+    <Reveal variant="l" className="mb-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[.22em] text-orange-400/90">
+      <span className="h-px w-7 bg-gradient-to-r from-orange-500 to-transparent"></span>{children}
+    </Reveal>
+  );
+}
+function IconTile({ name }) {
+  return (
+    <span className="inline-grid h-11 w-11 place-items-center rounded-md border border-line2 bg-char2 text-orange-400 transition duration-300 group-hover:scale-105 group-hover:border-orange-500/50 group-hover:text-orange-300">
+      <Icon name={name} size={22} />
+    </span>
+  );
 }
 
-function Panel({ className = '', children }) {
-  return <div className={`rounded-2xl border border-line bg-char/60 backdrop-blur-sm ${className}`}>{children}</div>;
-}
-
-/* ───────────────────────── sections ───────────────────────── */
-
+/* ─────────────── sections ─────────────── */
 function Nav() {
   const [open, setOpen] = useState(false);
-  const links = [['#how', 'How it works'], ['#features', 'Features'], ['#tech', 'Built on Celo']];
+  const links = [['#how', 'How it works'], ['#features', 'Features'], ['#tech', 'Built on Celo'], ['https://github.com/Myles181/Pulse', 'GitHub ↗']];
   return (
     <nav className="sticky top-0 z-50 border-b border-line/70 bg-ink/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-6 lg:px-10">
-        <a href="#" className="flex items-center gap-2.5 font-extrabold tracking-tight">
-          <img src="logo.png" alt="Pulse" className="h-9 w-9 rounded-lg object-contain ring-1 ring-orange-500/30" />
+        <a href="#" className="flex items-center gap-2.5 font-bold tracking-tight">
+          <img src="logo.png" alt="Pulse" className="h-9 w-9 rounded-sm object-contain ring-1 ring-orange-500/30" />
           <span className="text-lg">Pulse</span>
           <Badge>ERC-8004</Badge>
         </a>
         <ul className="hidden items-center gap-8 md:flex">
-          {links.map(([h, t]) => (
-            <li key={h}><a href={h} className="text-sm text-faint transition hover:text-[#f1e7dc]">{t}</a></li>
-          ))}
-          <li><a href="https://github.com/Myles181/Pulse" target="_blank" rel="noreferrer" className="text-sm text-faint transition hover:text-[#f1e7dc]">GitHub ↗</a></li>
+          {links.map(([h, t]) => <li key={t}><a href={h} className="text-sm text-faint transition hover:text-[#efe4d8]">{t}</a></li>)}
         </ul>
         <div className="flex items-center gap-2">
-          <a href="https://t.me/PulseAgentBot" className="hidden rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-2 text-sm font-semibold text-ink transition hover:opacity-90 sm:inline-block">Open in Telegram →</a>
-          <button onClick={() => setOpen(o => !o)} aria-label="Menu" className="grid h-10 w-10 place-items-center rounded-lg border border-line2 md:hidden">
+          <a href="https://t.me/PulseAgentBot" className="hidden rounded-md bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-2 text-sm font-semibold text-ink transition hover:opacity-90 sm:inline-block">Open in Telegram →</a>
+          <button onClick={() => setOpen(o => !o)} aria-label="Menu" className="grid h-10 w-10 place-items-center rounded-md border border-line2 md:hidden">
             <div className="space-y-1.5">
-              <span className={`block h-0.5 w-5 bg-[#f1e7dc] transition ${open ? 'translate-y-2 rotate-45' : ''}`}></span>
-              <span className={`block h-0.5 w-5 bg-[#f1e7dc] transition ${open ? 'opacity-0' : ''}`}></span>
-              <span className={`block h-0.5 w-5 bg-[#f1e7dc] transition ${open ? '-translate-y-2 -rotate-45' : ''}`}></span>
+              <span className={`block h-0.5 w-5 bg-[#efe4d8] transition ${open ? 'translate-y-2 rotate-45' : ''}`}></span>
+              <span className={`block h-0.5 w-5 bg-[#efe4d8] transition ${open ? 'opacity-0' : ''}`}></span>
+              <span className={`block h-0.5 w-5 bg-[#efe4d8] transition ${open ? '-translate-y-2 -rotate-45' : ''}`}></span>
             </div>
           </button>
         </div>
       </div>
-      {/* mobile menu */}
       <div className={`overflow-hidden border-t border-line/60 bg-ink/95 md:hidden transition-[max-height] duration-300 ${open ? 'max-h-72' : 'max-h-0'}`}>
         <ul className="flex flex-col gap-1 px-5 py-3">
-          {[...links, ['https://github.com/Myles181/Pulse', 'GitHub ↗']].map(([h, t]) => (
-            <li key={t}><a onClick={() => setOpen(false)} href={h} className="block rounded-lg px-3 py-2.5 text-sm text-faint hover:bg-white/5 hover:text-[#f1e7dc]">{t}</a></li>
-          ))}
-          <li><a href="https://t.me/PulseAgentBot" className="mt-1 block rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2.5 text-center text-sm font-semibold text-ink">Open in Telegram →</a></li>
+          {links.map(([h, t]) => <li key={t}><a onClick={() => setOpen(false)} href={h} className="block rounded-md px-3 py-2.5 text-sm text-faint hover:bg-white/5 hover:text-[#efe4d8]">{t}</a></li>)}
+          <li><a href="https://t.me/PulseAgentBot" className="mt-1 block rounded-md bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2.5 text-center text-sm font-semibold text-ink">Open in Telegram →</a></li>
         </ul>
       </div>
     </nav>
@@ -316,17 +350,15 @@ function Nav() {
 
 function Hero() {
   return (
-    <section id="hero" className="relative mx-auto max-w-6xl px-5 pt-16 sm:px-6 sm:pt-24 lg:px-10">
-      {/* big rounded frosted card, inspired by the reference layout */}
-      <div className="relative overflow-hidden rounded-[28px] border border-line2/70 bg-gradient-to-b from-char2/80 to-ink2/90 p-6 shadow-[0_40px_120px_-40px_rgba(255,122,24,.35)] sm:p-10 lg:p-14">
-        {/* ambient ember glows inside card */}
-        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-orange-600/20 blur-3xl"></div>
-        <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl"></div>
+    <section id="hero" className="relative mx-auto max-w-6xl px-5 pt-12 sm:px-6 sm:pt-20 lg:px-10">
+      <div className="relative overflow-hidden rounded-lg border border-line2/60 bg-gradient-to-b from-char2/70 to-ink2/90 px-6 py-10 shadow-[0_40px_120px_-50px_rgba(255,122,24,.35)] sm:px-10 sm:py-14 lg:px-14">
+        <div className="pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-orange-600/15 blur-3xl"></div>
+        <div className="pointer-events-none absolute -bottom-36 -left-24 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl"></div>
 
-        <div className="relative grid items-center gap-10 lg:grid-cols-[1.1fr_.9fr]">
-          {/* left: copy */}
+        <div className="relative grid items-center gap-8 lg:grid-cols-[1.08fr_.92fr]">
+          {/* copy */}
           <div className="text-center lg:text-left">
-            <div className="animate-fadeUp inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-orange-300 sm:text-xs">
+            <div className="animate-fadeUp inline-flex items-center gap-2 rounded-sm border border-orange-500/25 bg-orange-500/[.07] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[.14em] text-orange-300">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-pulseRing rounded-full bg-orange-400"></span>
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-400"></span>
@@ -334,52 +366,51 @@ function Hero() {
               Live on Celo Mainnet · Agent #9358
             </div>
 
-            <h1 className="mt-6 text-[clamp(34px,7vw,68px)] font-extrabold leading-[1.04] tracking-[-.03em]" style={{ animation: 'fadeUp .8s .1s cubic-bezier(.16,1,.3,1) both' }}>
+            <h1 className="mt-6 text-[clamp(33px,6.6vw,64px)] font-bold leading-[1.05] tracking-[-.03em]" style={{ animation: 'fadeUp .8s .1s cubic-bezier(.16,1,.3,1) both' }}>
               The notification agent<br className="hidden sm:block" /> for <span className="grad-anim animate-shimmer">Celo.</span><br /> Privacy-first.
             </h1>
 
             <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-faint sm:text-[17px] lg:mx-0" style={{ animation: 'fadeUp .8s .25s cubic-bezier(.16,1,.3,1) both' }}>
-              Pulse monitors your wallet 24/7 and alerts you to balance drops, whale moves, and DeFi opportunities — without ever storing your contact info in plaintext.
+              Pulse watches your wallet around the clock and pings you on balance drops, whale moves, and DeFi opportunities — without ever storing your contact details in plaintext.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start" style={{ animation: 'fadeUp .8s .38s cubic-bezier(.16,1,.3,1) both' }}>
-              <PrimaryBtn href="https://t.me/PulseAgentBot">Open Telegram bot →</PrimaryBtn>
-              <GhostBtn href="https://8004scan.io/agents/9358">View on 8004scan ↗</GhostBtn>
+              <PrimaryBtn href="https://t.me/PulseAgentBot"><Icon name="telegram" size={17} /> Open Telegram bot</PrimaryBtn>
+              <GhostBtn href="https://8004scan.io/agents/9358"><Icon name="scan" size={17} /> View on 8004scan</GhostBtn>
             </div>
 
-            <div className="mt-9 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-faint2 lg:justify-start" style={{ animation: 'fadeUp .8s .5s cubic-bezier(.16,1,.3,1) both' }}>
-              Powered by
-              <a href="https://docs.celo.org/build-on-celo/build-with-ai/8004" target="_blank" rel="noreferrer" className="text-faint transition hover:text-orange-300">ERC-8004</a>·
-              <a href="https://mento.finance" target="_blank" rel="noreferrer" className="text-faint transition hover:text-orange-300">Mento</a>·
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs text-faint2 lg:justify-start" style={{ animation: 'fadeUp .8s .5s cubic-bezier(.16,1,.3,1) both' }}>
+              <span className="uppercase tracking-wider">Powered by</span>
+              <a href="https://docs.celo.org/build-on-celo/build-with-ai/8004" target="_blank" rel="noreferrer" className="text-faint transition hover:text-orange-300">ERC-8004</a><span className="opacity-40">/</span>
+              <a href="https://mento.finance" target="_blank" rel="noreferrer" className="text-faint transition hover:text-orange-300">Mento</a><span className="opacity-40">/</span>
               <a href="https://self.xyz" target="_blank" rel="noreferrer" className="text-faint transition hover:text-orange-300">Self Protocol</a>
             </div>
           </div>
 
-          {/* right: rim-lit robot mascot */}
-          <div className="relative mx-auto w-full max-w-[360px]" style={{ animation: 'fadeUp .9s .3s cubic-bezier(.16,1,.3,1) both' }}>
-            <div className="pointer-events-none absolute inset-0 -z-0 animate-spinSlow rounded-full bg-[conic-gradient(from_0deg,transparent,rgba(255,122,24,.5),transparent_40%)] blur-2xl"></div>
-            <div className="relative animate-floaty overflow-hidden rounded-[24px] border border-orange-500/30 bg-char2 shadow-[0_30px_80px_-30px_rgba(255,122,24,.6)]">
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-orange-600/30 via-transparent to-amber-400/10 mix-blend-overlay"></div>
-              <img src={HERO_IMG} alt="Pulse agent" loading="eager" className="aspect-square w-full object-cover" />
-              <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/10"></div>
+          {/* robot — blended into the hero, no hard frame */}
+          <div className="relative mx-auto w-full max-w-[400px]" style={{ animation: 'fadeUp .9s .3s cubic-bezier(.16,1,.3,1) both' }}>
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[78%] w-[78%] -translate-x-1/2 -translate-y-1/2 animate-breathe rounded-full bg-[radial-gradient(circle,rgba(255,122,24,.4),transparent_62%)] blur-2xl"></div>
+            <div className="relative animate-floaty">
+              <img src={HERO_IMG} alt="Pulse agent" loading="eager" className="blend-img w-full" />
+              {/* warm tint + vignette so the bright photo melts into the charcoal */}
+              <div className="pointer-events-none absolute inset-0 bg-orange-700/25 mix-blend-color"></div>
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ink/90"></div>
+              <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 70% 74% at 52% 42%, transparent 44%, rgba(10,7,6,.55) 74%, #0a0706 92%)' }}></div>
             </div>
-            {/* floating chips */}
-            <div className="absolute -left-3 top-6 animate-floaty rounded-xl border border-line2 bg-ink/80 px-3 py-2 text-xs backdrop-blur-md sm:-left-6" style={{ animationDelay: '.6s' }}>
-              🔔 <span className="text-faint">Whale moved 1.2M cUSD</span>
+            <div className="absolute left-0 top-8 flex items-center gap-2 rounded-md border border-line2/70 bg-ink/70 px-3 py-2 text-xs backdrop-blur-md sm:-left-3">
+              <Icon name="whale" size={15} className="text-orange-400" /><span className="text-faint">Whale moved 1.2M cUSD</span>
             </div>
-            <div className="absolute -right-2 bottom-8 animate-floaty rounded-xl border border-line2 bg-ink/80 px-3 py-2 text-xs backdrop-blur-md sm:-right-5" style={{ animationDelay: '1.2s' }}>
-              ⛓️ <span className="text-faint">Receipt written</span>
+            <div className="absolute bottom-10 right-0 flex items-center gap-2 rounded-md border border-line2/70 bg-ink/70 px-3 py-2 text-xs backdrop-blur-md sm:-right-3">
+              <Icon name="link" size={15} className="text-orange-400" /><span className="text-faint">Receipt written</span>
             </div>
           </div>
         </div>
 
-        {/* embedded stats strip (reference-style) */}
-        <Stagger className="relative mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line/60 sm:grid-cols-4">
+        {/* stats strip */}
+        <Stagger className="relative mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line/60 sm:grid-cols-4">
           {METRICS.map((m, i) => (
             <div key={i} className="bg-char/70 px-4 py-5 sm:px-6">
-              <div className="text-2xl font-extrabold tracking-tight grad sm:text-[28px]">
-                <Counter value={m.v} suffix={m.suffix} />
-              </div>
+              <div className="text-2xl font-bold tracking-tight grad sm:text-[28px]"><Counter value={m.v} suffix={m.suffix} /></div>
               <div className="mt-1 text-[11px] leading-snug text-faint sm:text-[13px]">{m.label}</div>
             </div>
           ))}
@@ -390,23 +421,25 @@ function Hero() {
 }
 
 function H2({ children, className = '' }) {
-  return <Reveal as="h2" className={`text-[clamp(26px,4.5vw,42px)] font-extrabold leading-[1.1] tracking-[-.02em] ${className}`}>{children}</Reveal>;
+  return <Reveal as="h2" className={`text-[clamp(25px,4.2vw,40px)] font-bold leading-[1.12] tracking-[-.02em] ${className}`}>{children}</Reveal>;
 }
 
 function HowItWorks() {
   return (
     <section id="how" className="mx-auto max-w-6xl px-5 py-20 sm:px-6 sm:py-24 lg:px-10">
-      <SectionLabel>How it works</SectionLabel>
+      <Eyebrow>How it works</Eyebrow>
       <H2>Transparent by design.<br />Private by default.</H2>
       <Reveal as="p" className="mt-4 max-w-md text-[15px] leading-relaxed text-faint sm:text-[17px]">
         Three steps from wallet to alert — no KYC, no email forms, no third-party trackers.
       </Reveal>
-      <Stagger className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-line bg-line/60 md:grid-cols-3">
+      <Stagger className="mt-12 grid gap-3 sm:gap-4 md:grid-cols-3">
         {STEPS.map((s) => (
-          <div key={s.n} className="group bg-char/60 p-7 transition hover:bg-char2/70 sm:p-9">
-            <div className="text-[11px] font-bold tracking-[.12em] text-faint2">{s.n}</div>
-            <div className="mt-5 text-3xl transition group-hover:scale-110 group-hover:-rotate-6">{s.icon}</div>
-            <h3 className="mt-4 text-lg font-bold tracking-tight">{s.title}</h3>
+          <div key={s.n} className="group rounded-md border border-line bg-char/50 p-7 transition-all duration-300 hover:-translate-y-1.5 hover:border-orange-500/40 hover:bg-char2/70 hover:shadow-[0_18px_44px_-22px_rgba(255,122,24,.55)] sm:p-9">
+            <div className="flex items-center justify-between">
+              <IconTile name={s.icon} />
+              <span className="font-code text-xs tracking-[.12em] text-faint2">{s.n}</span>
+            </div>
+            <h3 className="mt-5 text-lg font-semibold tracking-tight">{s.title}</h3>
             <p className="mt-2.5 text-sm leading-relaxed text-faint">{s.body}</p>
           </div>
         ))}
@@ -416,33 +449,57 @@ function HowItWorks() {
 }
 
 function Compare() {
+  const [flipped, setFlipped] = useState(false);
+  const hover = useRef(false);
+  useEffect(() => {
+    const id = setInterval(() => { if (!hover.current) setFlipped(f => !f); }, 4200);
+    return () => clearInterval(id);
+  }, []);
+  const Row = ({ icon, children, good }) => (
+    <div className="mb-3.5 flex items-start gap-3 text-sm leading-snug">
+      <span className={`mt-0.5 shrink-0 ${good ? 'text-orange-400' : 'text-faint2'}`}><Icon name={icon} size={17} strokeWidth={1.7} /></span>
+      <span className={good ? 'text-[#efe4d8]' : 'text-faint2 line-through decoration-faint2/50'}>{children}</span>
+    </div>
+  );
+  const faceBase = 'flip-face absolute inset-0 flex h-full flex-col rounded-md border p-7 sm:p-9';
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-6 sm:py-24 lg:px-10">
-      <SectionLabel>The difference</SectionLabel>
+      <Eyebrow>The difference</Eyebrow>
       <H2>The old way vs.<br />The Pulse way.</H2>
       <Reveal as="p" className="mt-4 max-w-md text-[15px] leading-relaxed text-faint sm:text-[17px]">
-        Web2 notification services store your contact info in a database. Pulse never does.
+        Web2 notification services keep your contact info in a database. Pulse never does. Hover the card — or wait — to watch it flip.
       </Reveal>
-      <Stagger className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-line bg-line/60 md:grid-cols-2">
-        <div className="bg-char/60 p-7 sm:p-10">
-          <div className="mb-6 text-[13px] font-semibold uppercase tracking-wider text-faint2">❌ The old way</div>
-          {BAD.map(([icon, t]) => (
-            <div key={t} className="mb-4 flex items-start gap-3 text-sm leading-snug">
-              <span className="shrink-0 text-base opacity-60">{icon}</span>
-              <span className="text-faint2 line-through">{t}</span>
+
+      <Reveal className="mt-12">
+        <div className="mx-auto max-w-2xl [perspective:2000px]">
+          <div
+            onMouseEnter={() => { hover.current = true; setFlipped(true); }}
+            onMouseLeave={() => { hover.current = false; setFlipped(false); }}
+            onClick={() => setFlipped(f => !f)}
+            className="flip-inner relative min-h-[510px] cursor-pointer transition-transform duration-[850ms] ease-[cubic-bezier(.16,1,.3,1)] sm:min-h-[430px]"
+            style={{ transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+          >
+            {/* FRONT — the old way */}
+            <div className={`${faceBase} border-line bg-char/70`}>
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[13px] font-medium uppercase tracking-wider text-faint2"><Icon name="x" size={16} /> The old way</div>
+                <span className="rounded-sm border border-line2 px-2 py-0.5 text-[10px] uppercase tracking-wider text-faint2">Web2</span>
+              </div>
+              {BAD.map(([icon, t]) => <Row key={t} icon={icon}>{t}</Row>)}
+              <div className="mt-auto pt-5 text-[11px] uppercase tracking-[.18em] text-faint2/70">Hover · tap · or wait →</div>
             </div>
-          ))}
-        </div>
-        <div className="bg-gradient-to-br from-orange-500/[.08] to-amber-500/[.04] p-7 sm:p-10">
-          <div className="mb-6 text-[13px] font-semibold uppercase tracking-wider grad">✅ The Pulse way</div>
-          {GOOD.map(([icon, t]) => (
-            <div key={t} className="mb-4 flex items-start gap-3 text-sm leading-snug">
-              <span className="shrink-0 text-base">{icon}</span>
-              <span className="text-[#f1e7dc]">{t}</span>
+            {/* BACK — the Pulse way */}
+            <div className={`${faceBase} border-orange-500/30 bg-gradient-to-br from-orange-500/[.12] to-amber-500/[.04] shadow-[0_30px_80px_-44px_rgba(255,122,24,.7)]`} style={{ transform: 'rotateY(180deg)' }}>
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[13px] font-medium uppercase tracking-wider grad"><Icon name="check" size={16} className="text-orange-400" /> The Pulse way</div>
+                <span className="rounded-sm border border-orange-500/30 bg-orange-500/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-orange-300">Pulse</span>
+              </div>
+              {GOOD.map(([icon, t]) => <Row key={t} icon={icon} good>{t}</Row>)}
+              <div className="mt-auto pt-5 text-[11px] uppercase tracking-[.18em] text-orange-300/60">← Privacy-first by default</div>
             </div>
-          ))}
+          </div>
         </div>
-      </Stagger>
+      </Reveal>
     </section>
   );
 }
@@ -450,26 +507,25 @@ function Compare() {
 function Features() {
   return (
     <section id="features" className="mx-auto max-w-6xl px-5 py-20 sm:px-6 sm:py-24 lg:px-10">
-      <SectionLabel>Features</SectionLabel>
+      <Eyebrow>Features</Eyebrow>
       <H2>Everything watching.<br />Nothing leaking.</H2>
-      <Stagger className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-line bg-line/60 md:grid-cols-2">
+      <Stagger className="mt-12 grid gap-3 sm:gap-4 md:grid-cols-2">
         {FEATURES.map((f) => (
-          <div key={f.title} className="group relative overflow-hidden bg-char/60 p-7 transition hover:bg-char2/70 sm:p-10">
+          <div key={f.title} className="group relative overflow-hidden rounded-md border border-line bg-char/50 p-7 transition-all duration-300 hover:-translate-y-1.5 hover:border-orange-500/40 hover:bg-char2/70 hover:shadow-[0_18px_44px_-22px_rgba(255,122,24,.55)] sm:p-10">
             <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-orange-500/0 blur-2xl transition group-hover:bg-orange-500/10"></div>
-            <div className="text-3xl transition group-hover:-translate-y-1">{f.icon}</div>
-            <h3 className="mt-5 text-xl font-bold tracking-tight">{f.title}</h3>
+            <IconTile name={f.icon} />
+            <h3 className="mt-5 text-xl font-semibold tracking-tight">{f.title}</h3>
             <p className="mt-2.5 max-w-md text-sm leading-relaxed text-faint">{f.body}</p>
-            <span className="mt-4 inline-block rounded-full border border-orange-500/25 bg-orange-500/10 px-2.5 py-1 text-[11px] font-semibold text-orange-300">{f.tag}</span>
+            <span className="mt-4 inline-block rounded-sm border border-orange-500/25 bg-orange-500/10 px-2.5 py-1 text-[11px] font-medium text-orange-300">{f.tag}</span>
           </div>
         ))}
-        {/* wide protocol card */}
-        <div className="group relative overflow-hidden bg-char/60 p-7 transition hover:bg-char2/70 sm:p-10 md:col-span-2">
-          <div className="text-3xl transition group-hover:-translate-y-1">⚙️</div>
-          <h3 className="mt-5 text-xl font-bold tracking-tight">Protocol Selection</h3>
+        <div className="group relative overflow-hidden rounded-md border border-line bg-char/50 p-7 transition-all duration-300 hover:-translate-y-1.5 hover:border-orange-500/40 hover:bg-char2/70 hover:shadow-[0_18px_44px_-22px_rgba(255,122,24,.55)] sm:p-10 md:col-span-2">
+          <IconTile name="settings" />
+          <h3 className="mt-5 text-xl font-semibold tracking-tight">Protocol Selection</h3>
           <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-faint">
             Use <Code>/protocols</Code> to toggle exactly what you want to be notified about. Every toggle is written to the ERC-8004 Reputation Registry — generating onchain activity that builds Pulse’s agent reputation automatically.
           </p>
-          <span className="mt-4 inline-block rounded-full border border-orange-500/25 bg-orange-500/10 px-2.5 py-1 text-[11px] font-semibold text-orange-300">Inline Telegram keyboard</span>
+          <span className="mt-4 inline-block rounded-sm border border-orange-500/25 bg-orange-500/10 px-2.5 py-1 text-[11px] font-medium text-orange-300">Inline Telegram keyboard</span>
         </div>
       </Stagger>
     </section>
@@ -479,17 +535,16 @@ function Features() {
 function Tech() {
   return (
     <section id="tech" className="mx-auto max-w-6xl px-5 py-20 sm:px-6 sm:py-24 lg:px-10">
-      <SectionLabel>Built on Celo</SectionLabel>
+      <Eyebrow>Built on Celo</Eyebrow>
       <H2>Native Celo infrastructure.<br />Not bolted on.</H2>
       <Reveal as="p" className="mt-4 max-w-md text-[15px] leading-relaxed text-faint sm:text-[17px]">
         Every layer of Pulse uses existing Celo ecosystem tools — not custom-built replacements.
       </Reveal>
-      <Stagger className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-line bg-line/60 sm:grid-cols-2 lg:grid-cols-3">
+      <Stagger className="mt-12 grid gap-px overflow-hidden rounded-md border border-line bg-line/60 sm:grid-cols-2 lg:grid-cols-3">
         {TECH.map(([t, d]) => (
           <div key={t} className="bg-char/60 p-7 transition hover:bg-char2/70">
-            <h3 className="flex items-center gap-2.5 text-base font-bold">
-              <span className="inline-block h-2 w-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_10px_2px_rgba(255,122,24,.5)]"></span>
-              {t}
+            <h3 className="flex items-center gap-2.5 text-base font-semibold">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_8px_2px_rgba(255,122,24,.5)]"></span>{t}
             </h3>
             <p className="mt-2.5 text-[13px] leading-relaxed text-faint">{d}</p>
           </div>
@@ -502,7 +557,7 @@ function Tech() {
 function CodeSection() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-20 sm:px-6 sm:py-24 lg:px-10">
-      <SectionLabel>Under the hood</SectionLabel>
+      <Eyebrow>Under the hood</Eyebrow>
       <H2>One agent.<br />Every alert onchain.</H2>
       <div className="mt-12 grid items-center gap-10 lg:grid-cols-2">
         <Reveal variant="l">
@@ -510,20 +565,20 @@ function CodeSection() {
             Every time Pulse sends an alert, it calls <Code>giveFeedback()</Code> on the ERC-8004 Reputation Registry — writing an immutable receipt of the agent’s activity onchain.
           </p>
           <p className="mt-5 text-[15px] leading-relaxed text-faint sm:text-base">
-            This means every alert Pulse sends is verifiable, auditable, and contributes to the agent’s onchain reputation score on 8004scan.
+            So every alert Pulse sends is verifiable, auditable, and contributes to the agent’s onchain reputation score on 8004scan.
           </p>
-          <GhostBtn href="https://8004scan.io/agents/9358" className="mt-7">View receipts on 8004scan ↗</GhostBtn>
+          <GhostBtn href="https://8004scan.io/agents/9358" className="mt-7"><Icon name="scan" size={17} /> View receipts on 8004scan</GhostBtn>
         </Reveal>
 
         <Reveal variant="r">
-          <div className="overflow-hidden rounded-2xl border border-line bg-ink2 shadow-[0_30px_70px_-30px_rgba(0,0,0,.8)]">
+          <div className="overflow-hidden rounded-md border border-line bg-ink2 shadow-[0_30px_70px_-30px_rgba(0,0,0,.8)]">
             <div className="flex items-center gap-2 border-b border-line px-4 py-3">
               <span className="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
               <span className="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
               <span className="h-3 w-3 rounded-full bg-[#27c93f]"></span>
-              <span className="ml-auto font-mono text-xs text-faint2">onchain.ts</span>
+              <span className="ml-auto font-code text-xs text-faint2">onchain.ts</span>
             </div>
-            <pre className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed text-[#d8cfc4] sm:text-[13px]">
+            <pre className="overflow-x-auto p-5 font-code text-[12.5px] leading-relaxed text-[#d8cfc4] sm:text-[13px]">
 <span className="text-faint2">{`// Write receipt per alert → ERC-8004`}</span>{`\n`}
 <span className="text-pink-300">const</span>{` contract = `}<span className="text-pink-300">new</span>{` `}<span className="text-orange-400">Contract</span>{`(\n  REPUTATION_REGISTRY, ABI, wallet\n);\n\n`}
 <span className="text-pink-300">const</span>{` tag = ethers.`}<span className="text-orange-400">encodeBytes32String</span>{`(\n  alertType\n);\n\n`}
@@ -542,17 +597,17 @@ function FinalCTA() {
   return (
     <section id="cta" className="mx-auto max-w-6xl px-5 py-24 sm:px-6 lg:px-10">
       <Reveal variant="s">
-        <div className="relative mx-auto max-w-3xl overflow-hidden rounded-[28px] border border-line2/70 bg-gradient-to-b from-char2/80 to-ink2/90 px-6 py-16 text-center shadow-[0_40px_120px_-40px_rgba(255,122,24,.4)] sm:px-12 sm:py-20">
-          <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-orange-500/20 blur-3xl"></div>
+        <div className="relative mx-auto max-w-3xl overflow-hidden rounded-lg border border-line2/60 bg-gradient-to-b from-char2/70 to-ink2/90 px-6 py-16 text-center shadow-[0_40px_120px_-50px_rgba(255,122,24,.4)] sm:px-12 sm:py-20">
+          <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-orange-500/15 blur-3xl"></div>
           <div className="relative">
-            <div className="text-[11px] font-bold uppercase tracking-[.16em] grad">Get started</div>
-            <h2 className="mt-4 text-[clamp(26px,5vw,40px)] font-extrabold leading-tight tracking-[-.02em]">Your first alert is<br />one message away.</h2>
+            <div className="text-[11px] font-semibold uppercase tracking-[.22em] grad">Get started</div>
+            <h2 className="mt-4 text-[clamp(25px,4.8vw,38px)] font-bold leading-tight tracking-[-.02em]">Your first alert is<br />one message away.</h2>
             <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-faint sm:text-[17px]">
               Open the Pulse bot in Telegram, register your wallet, and you’re live in under 60 seconds.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <PrimaryBtn href="https://t.me/PulseAgentBot">Open Telegram bot →</PrimaryBtn>
-              <GhostBtn href="https://github.com/Myles181/Pulse">View source ↗</GhostBtn>
+              <PrimaryBtn href="https://t.me/PulseAgentBot"><Icon name="telegram" size={17} /> Open Telegram bot</PrimaryBtn>
+              <GhostBtn href="https://github.com/Myles181/Pulse"><Icon name="github" size={17} /> View source</GhostBtn>
             </div>
           </div>
         </div>
@@ -562,40 +617,32 @@ function FinalCTA() {
 }
 
 function Footer() {
-  const links = [
-    ['https://t.me/PulseAgentBot', 'Telegram Bot'],
-    ['https://github.com/Myles181/Pulse', 'GitHub'],
-    ['https://8004scan.io/agents/9358', '8004scan'],
-    ['https://docs.celo.org/build-on-celo/build-with-ai/8004', 'ERC-8004 Docs'],
-  ];
   return (
     <footer className="border-t border-line/70">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-12 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-10">
         <div>
-          <div className="flex items-center gap-2 font-bold">
-            <img src="logo.png" alt="Pulse" className="h-6 w-6 rounded-md object-contain ring-1 ring-orange-500/30" />
-            Pulse
+          <div className="flex items-center gap-2 font-semibold">
+            <img src="logo.png" alt="Pulse" className="h-6 w-6 rounded-sm object-contain ring-1 ring-orange-500/30" />Pulse
           </div>
-          <div className="mt-2 text-xs text-faint2">ERC-8004 Agent #9358 · Built on Celo · Celo Onchain Agents Hackathon 2026</div>
+          <div className="mt-2 text-xs text-faint2">ERC-8004 Agent #9358 · Built on Celo · Onchain Agents Hackathon 2026</div>
         </div>
-        <ul className="flex flex-wrap gap-x-6 gap-y-2">
-          {links.map(([h, t]) => (
-            <li key={t}><a href={h} target="_blank" rel="noreferrer" className="text-[13px] text-faint transition hover:text-orange-300">{t}</a></li>
+        <div className="flex items-center gap-3">
+          {SOCIALS.map((s) => (
+            <a key={s.label} href={s.href} target="_blank" rel="noreferrer" title={s.label} aria-label={s.label}
+               className="grid h-10 w-10 place-items-center rounded-md border border-line2 bg-char2 text-faint transition hover:-translate-y-0.5 hover:border-orange-500/50 hover:text-orange-300">
+              <Icon name={s.icon} size={18} />
+            </a>
           ))}
-        </ul>
+        </div>
       </div>
     </footer>
   );
 }
 
 function App() {
-  // cursor gas glow
   useEffect(() => {
     const gas = document.getElementById('gas');
-    const move = (x, y) => {
-      gas.style.setProperty('--mx', x + 'px');
-      gas.style.setProperty('--my', y + 'px');
-    };
+    const move = (x, y) => { gas.style.setProperty('--mx', x + 'px'); gas.style.setProperty('--my', y + 'px'); };
     const onMouse = (e) => move(e.clientX, e.clientY);
     const onTouch = (e) => { if (e.touches[0]) move(e.touches[0].clientX, e.touches[0].clientY); };
     window.addEventListener('mousemove', onMouse);
